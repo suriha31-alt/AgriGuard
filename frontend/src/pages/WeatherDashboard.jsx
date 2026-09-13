@@ -1,4 +1,3 @@
-```jsx
 import {
     useCallback,
     useEffect,
@@ -23,9 +22,30 @@ import WeatherAlert
     from "../components/weather/WeatherAlert";
 
 
+import LanguageSelector
+    from "../components/weather/LanguageSelector";
+
+
+import {
+    useLanguage
+} from "../i18n/LanguageContext";
+
+
 
 const WeatherDashboard = () => {
 
+    /*
+     * Language
+     */
+    const {
+        t
+    } = useLanguage();
+
+
+
+    /*
+     * Weather state
+     */
     const [weather, setWeather] =
         useState(null);
 
@@ -167,7 +187,7 @@ const WeatherDashboard = () => {
 
 
                     /*
-                     * Get current farmer location
+                     * Get farmer location
                      */
                     const location =
                         await getFarmerLocation();
@@ -262,21 +282,24 @@ const WeatherDashboard = () => {
                         🌤️
                     </div>
 
+
                     <h2>
-                        Getting your farm weather
+                        {t.farmWeather}
                     </h2>
+
 
                     <p>
 
                         {locationLoading
 
-                            ? "Detecting your location..."
+                            ? t.detectingLocation
 
-                            : "Fetching the latest weather information..."
+                            : t.fetchingWeather
 
                         }
 
                     </p>
+
 
                     <div className="loading-bar">
 
@@ -307,9 +330,11 @@ const WeatherDashboard = () => {
                         📍
                     </div>
 
+
                     <h2>
-                        Weather unavailable
+                        {t.weatherUnavailable}
                     </h2>
+
 
                     <p>
                         {error}
@@ -321,17 +346,61 @@ const WeatherDashboard = () => {
                         onClick={loadWeather}
                     >
 
-                        🔄 Try Again
+                        🔄 {t.tryAgain}
 
                     </button>
 
 
                     <p className="location-help">
 
-                        Make sure location permission
-                        is enabled in your browser.
+                        {t.locationPermission}
 
                     </p>
+
+                </div>
+
+            </div>
+        );
+    }
+
+
+
+    /*
+     * Safety check
+     *
+     * Prevents blank page if weather data
+     * has not loaded correctly.
+     */
+    if (
+        !weather ||
+        !weather.current ||
+        !weather.location
+    ) {
+
+        return (
+
+            <div className="weather-page">
+
+                <div className="weather-error">
+
+                    <div className="error-icon">
+                        ⚠️
+                    </div>
+
+
+                    <h2>
+                        {t.weatherUnavailable}
+                    </h2>
+
+
+                    <button
+                        className="primary-button"
+                        onClick={loadWeather}
+                    >
+
+                        🔄 {t.tryAgain}
+
+                    </button>
 
                 </div>
 
@@ -351,9 +420,14 @@ const WeatherDashboard = () => {
             <main className="weather-dashboard">
 
 
-                {/* HEADER */}
+                {/* =========================================
+                    HEADER
+                ========================================= */}
 
                 <header className="weather-header">
+
+
+                    {/* LEFT SIDE */}
 
                     <div className="header-left">
 
@@ -361,20 +435,22 @@ const WeatherDashboard = () => {
                             🌤️
                         </div>
 
+
                         <div>
 
                             <p className="header-eyebrow">
-                                AGRIGUARD
+                                {t.agriguard}
                             </p>
 
+
                             <h1>
-                                Farm Weather
+                                {t.farmWeather}
                             </h1>
+
 
                             <p className="header-description">
 
-                                Smart weather insights
-                                for better farming decisions
+                                {t.weatherDescription}
 
                             </p>
 
@@ -383,7 +459,19 @@ const WeatherDashboard = () => {
                     </div>
 
 
+
+                    {/* RIGHT SIDE */}
+
                     <div className="header-right">
+
+
+                        {/* LANGUAGE SELECTOR */}
+
+                        <LanguageSelector />
+
+
+
+                        {/* LOCATION */}
 
                         <div className="location-badge">
 
@@ -391,11 +479,13 @@ const WeatherDashboard = () => {
                                 📍
                             </span>
 
+
                             <div>
 
                                 <span>
-                                    Your farm location
+                                    {t.farmLocation}
                                 </span>
+
 
                                 <strong>
 
@@ -412,19 +502,23 @@ const WeatherDashboard = () => {
                         </div>
 
 
+
+                        {/* REFRESH BUTTON */}
+
                         <button
                             className="refresh-button"
                             onClick={loadWeather}
-                            title="Refresh weather"
+                            title={t.refresh}
                         >
 
                             <span>
                                 🔄
                             </span>
 
-                            Refresh
+                            {t.refresh}
 
                         </button>
+
 
                     </div>
 
@@ -432,22 +526,27 @@ const WeatherDashboard = () => {
 
 
 
-                {/* STATUS BAR */}
+                {/* =========================================
+                    STATUS BAR
+                ========================================= */}
 
                 <div className="weather-status-bar">
+
 
                     <div className="live-status">
 
                         <span className="live-dot"></span>
 
-                        Live weather data
+                        {t.liveWeather}
 
                     </div>
 
 
+
                     <div className="updated-time">
 
-                        🕐 Last updated:{" "}
+                        🕐 {t.lastUpdated}:{" "}
+
 
                         {lastUpdated
 
@@ -457,11 +556,14 @@ const WeatherDashboard = () => {
 
                                 {
 
-                                    hour: "2-digit",
+                                    hour:
+                                        "2-digit",
 
-                                    minute: "2-digit",
+                                    minute:
+                                        "2-digit",
 
-                                    second: "2-digit"
+                                    second:
+                                        "2-digit"
 
                                 }
 
@@ -477,7 +579,9 @@ const WeatherDashboard = () => {
 
 
 
-                {/* CURRENT WEATHER */}
+                {/* =========================================
+                    CURRENT WEATHER CARDS
+                ========================================= */}
 
                 <CurrentWeather
 
@@ -497,7 +601,9 @@ const WeatherDashboard = () => {
 
 
 
-                {/* FORECAST */}
+                {/* =========================================
+                    7 DAY FORECAST
+                ========================================= */}
 
                 <WeatherForecast
 
@@ -509,7 +615,9 @@ const WeatherDashboard = () => {
 
 
 
-                {/* ALERTS */}
+                {/* =========================================
+                    SMART FARMING ALERTS
+                ========================================= */}
 
                 <WeatherAlert
 
@@ -521,32 +629,36 @@ const WeatherDashboard = () => {
 
 
 
-                {/* FOOTER */}
+                {/* =========================================
+                    FOOTER
+                ========================================= */}
 
                 <footer className="weather-footer">
+
 
                     <div>
 
                         <strong>
-                            AgriGuard
+                            {t.agriguard}
                         </strong>
+
 
                         <span>
 
-                            Smart farming starts
-                            with better information.
+                            {t.smartFarmingStarts}
 
                         </span>
 
                     </div>
 
 
+
                     <div className="data-source">
 
-                        Weather data powered by
-                        Open-Meteo
+                        {t.poweredBy}
 
                     </div>
+
 
                 </footer>
 
@@ -558,5 +670,5 @@ const WeatherDashboard = () => {
 };
 
 
+
 export default WeatherDashboard;
-```

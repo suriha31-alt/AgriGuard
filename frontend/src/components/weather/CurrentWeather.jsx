@@ -1,26 +1,164 @@
+import { useLanguage } from "../../i18n/LanguageContext";
+
 const CurrentWeather = ({
     weather,
     soilType,
     forecast
 }) => {
 
+    const {
+        language,
+        t
+    } = useLanguage();
+
     if (!weather) {
         return null;
     }
 
-
-    /*
-     * Today's sunshine
-     */
     const todaySunshine =
         forecast?.[0]?.sunshineHours;
 
-
-    /*
-     * Today's expected rainfall
-     */
     const todayRainfall =
         forecast?.[0]?.rainfall;
+
+
+    /*
+     * Translate soil type
+     */
+    const soilTranslations = {
+        "Loamy Soil": {
+            en: "Loamy Soil",
+            ta: "களிமண்",
+            hi: "दोमट मिट्टी",
+            te: "లోమీ నేల",
+            kn: "ಲೋಮಿ ಮಣ್ಣು",
+            ml: "എക്കൽ മണ്ണ്"
+        }
+    };
+
+    const translatedSoil =
+        soilTranslations[soilType?.value]?.[language] ||
+        soilType?.value ||
+        "Not Available";
+
+
+    /*
+     * Translate weather condition
+     */
+    const conditionTranslations = {
+        "Clear sky": {
+            en: "Clear sky",
+            ta: "தெளிவான வானம்",
+            hi: "साफ आसमान",
+            te: "స్పష్టమైన ఆకాశం",
+            kn: "ಸ್ಪಷ್ಟವಾದ ಆಕಾಶ",
+            ml: "തെളിഞ്ഞ ആകാശം"
+        },
+
+        "Mainly clear": {
+            en: "Mainly clear",
+            ta: "பெரும்பாலும் தெளிவு",
+            hi: "मुख्यतः साफ",
+            te: "ప్రధానంగా స్పష్టంగా",
+            kn: "ಮುಖ್ಯವಾಗಿ ಸ್ಪಷ್ಟ",
+            ml: "പ്രധാനമായും തെളിഞ്ഞത്"
+        },
+
+        "Partly cloudy": {
+            en: "Partly cloudy",
+            ta: "பகுதியளவு மேகமூட்டம்",
+            hi: "आंशिक रूप से बादल",
+            te: "పాక్షికంగా మేఘావృతం",
+            kn: "ಭಾಗಶಃ ಮೋಡ",
+            ml: "ഭാഗികമായി മേഘാവൃതം"
+        },
+
+        "Overcast": {
+            en: "Overcast",
+            ta: "முழுமையாக மேகமூட்டம்",
+            hi: "बादलों से ढका",
+            te: "పూర్తిగా మేఘావృతం",
+            kn: "ಮೋಡದಿಂದ ಕೂಡಿದೆ",
+            ml: "മേഘാവൃതം"
+        },
+
+        "Fog": {
+            en: "Fog",
+            ta: "மூடுபனி",
+            hi: "कोहरा",
+            te: "పొగమంచు",
+            kn: "ಮಂಜು",
+            ml: "മൂടൽമഞ്ഞ്"
+        },
+
+        "Light drizzle": {
+            en: "Light drizzle",
+            ta: "லேசான தூறல்",
+            hi: "हल्की बूंदाबांदी",
+            te: "తేలికపాటి జల్లులు",
+            kn: "ಲಘು ತುಂತುರು ಮಳೆ",
+            ml: "നേരിയ ചാറ്റൽമഴ"
+        },
+
+        "Moderate drizzle": {
+            en: "Moderate drizzle",
+            ta: "மிதமான தூறல்",
+            hi: "मध्यम बूंदाबांदी",
+            te: "మోస్తరు జల్లులు",
+            kn: "ಮಧ್ಯಮ ತುಂತುರು ಮಳೆ",
+            ml: "മിതമായ ചാറ്റൽമഴ"
+        },
+
+        "Dense drizzle": {
+            en: "Dense drizzle",
+            ta: "அடர்த்தியான தூறல்",
+            hi: "तेज बूंदाबांदी",
+            te: "దట్టమైన జల్లులు",
+            kn: "ದಟ್ಟವಾದ ತುಂತುರು ಮಳೆ",
+            ml: "കനത്ത ചാറ്റൽമഴ"
+        },
+
+        "Slight rain": {
+            en: "Slight rain",
+            ta: "லேசான மழை",
+            hi: "हल्की बारिश",
+            te: "తేలికపాటి వర్షం",
+            kn: "ಲಘು ಮಳೆ",
+            ml: "നേരിയ മഴ"
+        },
+
+        "Moderate rain": {
+            en: "Moderate rain",
+            ta: "மிதமான மழை",
+            hi: "मध्यम बारिश",
+            te: "మోస్తరు వర్షం",
+            kn: "ಮಧ್ಯಮ ಮಳೆ",
+            ml: "മിതമായ മഴ"
+        },
+
+        "Heavy rain": {
+            en: "Heavy rain",
+            ta: "கனமழை",
+            hi: "भारी बारिश",
+            te: "భారీ వర్షం",
+            kn: "ಭಾರಿ ಮಳೆ",
+            ml: "കനത്ത മഴ"
+        },
+
+        "Thunderstorm": {
+            en: "Thunderstorm",
+            ta: "இடியுடன் கூடிய மழை",
+            hi: "आंधी-तूफान",
+            te: "ఉరుములతో కూడిన వర్షం",
+            kn: "ಗುಡುಗು ಸಹಿತ ಮಳೆ",
+            ml: "ഇടിമിന്നലോടുകൂടിയ മഴ"
+        }
+    };
+
+
+    const translatedCondition =
+        conditionTranslations[weather.condition]?.[language] ||
+        weather.condition;
 
 
     return (
@@ -41,7 +179,7 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Temperature
+                            {t.temperature}
                         </p>
 
                         <h2>
@@ -50,7 +188,7 @@ const CurrentWeather = ({
                         </h2>
 
                         <p className="card-subtext">
-                            {weather.condition}
+                            {translatedCondition}
                         </p>
 
                     </div>
@@ -70,7 +208,7 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Humidity
+                            {t.humidity}
                         </p>
 
                         <h2>
@@ -79,7 +217,7 @@ const CurrentWeather = ({
                         </h2>
 
                         <p className="card-subtext">
-                            Current humidity
+                            {t.currentHumidity}
                         </p>
 
                     </div>
@@ -99,21 +237,15 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Soil Type
+                            {t.soilType}
                         </p>
 
                         <h2 className="soil-type-value">
-
-                            {soilType?.value ||
-                                "Not Available"}
-
+                            {translatedSoil}
                         </h2>
 
                         <p className="card-subtext">
-
-                            {soilType?.message ||
-                                "Soil information"}
-
+                            {t.suitableManyCrops}
                         </p>
 
                     </div>
@@ -133,7 +265,7 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Sunlight
+                            {t.sunlight}
                         </p>
 
                         <h2>
@@ -148,7 +280,7 @@ const CurrentWeather = ({
                         </h2>
 
                         <p className="card-subtext">
-                            Expected today
+                            {t.expectedToday}
                         </p>
 
                     </div>
@@ -168,7 +300,7 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Rainfall
+                            {t.rainfall}
                         </p>
 
                         <h2>
@@ -180,7 +312,7 @@ const CurrentWeather = ({
                         </h2>
 
                         <p className="card-subtext">
-                            Expected today
+                            {t.expectedToday}
                         </p>
 
                     </div>
@@ -200,7 +332,7 @@ const CurrentWeather = ({
                     <div className="card-content">
 
                         <p className="card-label">
-                            Wind
+                            {t.wind}
                         </p>
 
                         <h2>
@@ -215,7 +347,7 @@ const CurrentWeather = ({
                         </h2>
 
                         <p className="card-subtext">
-                            Current wind speed
+                            {t.currentWind}
                         </p>
 
                     </div>
