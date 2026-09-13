@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const weatherRoutes = require("./routes/weatherRoutes");
+const schemeRoutes = require("./routes/schemeRoutes");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 
 // Weather API
 app.use("/api/weather", weatherRoutes);
+app.use("/api/schemes", schemeRoutes);
 
 // 404 handler
 app.use((req, res) => {
