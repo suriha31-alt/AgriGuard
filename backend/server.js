@@ -8,7 +8,10 @@ require("dotenv").config();
 const weatherRoutes =
     require("./routes/weatherRoutes");
 
-
+const cropRecommendationRoutes =
+    require(
+        "./routes/cropRecommendationRoutes"
+    );
 const app = express();
 
 
@@ -23,7 +26,10 @@ app.use(cors());
 
 app.use(express.json());
 
-
+app.use(
+    "/api/crop-recommendation",
+    cropRecommendationRoutes
+);
 /*
  * Home route
  */
