@@ -4,6 +4,7 @@ require("dotenv").config();
 
 const weatherRoutes = require("./routes/weatherRoutes");
 const schemeRoutes = require("./routes/schemeRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 
 const app = express();
 
@@ -24,6 +25,8 @@ app.get("/", (req, res) => {
 // Weather API
 app.use("/api/weather", weatherRoutes);
 app.use("/api/schemes", schemeRoutes);
+app.use("/api/profile", profileRoutes);
+
 
 // 404 handler
 app.use((req, res) => {
