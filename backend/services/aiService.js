@@ -1,4 +1,9 @@
 const https = require("https");
+const dns = require("dns");
+
+// Prefer IPv4 for OpenRouter connection
+dns.setDefaultResultOrder("ipv4first");
+
 
 function callOpenRouter(messages) {
     return new Promise((resolve, reject) => {
@@ -11,8 +16,12 @@ function callOpenRouter(messages) {
 
         const options = {
             hostname: "openrouter.ai",
+            port: 443,
             path: "/api/v1/chat/completions",
             method: "POST",
+
+            family: 4,
+
             headers: {
                 "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
                 "Content-Type": "application/json",
@@ -53,6 +62,12 @@ function callOpenRouter(messages) {
                         data?.choices?.[0]?.message?.content;
 
                     if (!content) {
+
+                        console.error(
+                            "OpenRouter response:",
+                            body
+                        );
+
                         return reject(
                             new Error(
                                 "OpenRouter returned an empty response"
@@ -64,6 +79,11 @@ function callOpenRouter(messages) {
 
                 } catch (error) {
 
+                    console.error(
+                        "OpenRouter JSON Parse Error:",
+                        error.message
+                    );
+
                     reject(
                         new Error(
                             "Failed to parse OpenRouter response"
@@ -74,6 +94,12 @@ function callOpenRouter(messages) {
         });
 
         req.on("error", (error) => {
+
+            console.error(
+                "OpenRouter Connection Error:",
+                error
+            );
+
             reject(error);
         });
 

@@ -1,18 +1,27 @@
 const express = require("express");
 
 const {
-    getSchemes
+    getMySchemes
 } = require("../controllers/schemeController");
+
+const {
+    authenticateToken
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
 /*
-    Get government schemes based on
-    a farmer profile.
-
-    Example:
-    GET /api/schemes/1
+    All government scheme requests
+    require authentication.
 */
-router.get("/:profileId", getSchemes);
+router.use(authenticateToken);
+
+/*
+    Get schemes for the currently
+    logged-in farmer.
+
+    GET /api/schemes/me
+*/
+router.get("/me", getMySchemes);
 
 module.exports = router;

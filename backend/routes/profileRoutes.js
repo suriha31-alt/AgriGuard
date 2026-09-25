@@ -2,16 +2,26 @@ const express = require("express");
 
 const {
     createProfile,
-    getProfile,
-    updateProfile
+    getMyProfile,
+    updateMyProfile
 } = require("../controllers/profileController");
+
+const {
+    authenticateToken
+} = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
+// All profile routes require login
+router.use(authenticateToken);
+
+// Create farmer profile
 router.post("/", createProfile);
 
-router.get("/:id", getProfile);
+// Get logged-in user's profile
+router.get("/me", getMyProfile);
 
-router.put("/:id", updateProfile);
+// Update logged-in user's profile
+router.put("/me", updateMyProfile);
 
 module.exports = router;

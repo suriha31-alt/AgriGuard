@@ -2,6 +2,8 @@ const { pool } = require("../services/databaseService");
 
 async function createProfile(req, res) {
     try {
+        const userId = req.user.userId;
+
         const {
             state,
             district,
@@ -11,7 +13,6 @@ async function createProfile(req, res) {
             farming_type
         } = req.body;
 
-        // Validate required fields
         if (
             !state ||
             !district ||
@@ -26,7 +27,6 @@ async function createProfile(req, res) {
             });
         }
 
-        // Validate land size
         const landSize = Number(land_size);
 
         if (Number.isNaN(landSize) || landSize <= 0) {
@@ -36,11 +36,33 @@ async function createProfile(req, res) {
             });
         }
 
+        // Check whether this user already has a profile
+        const [existingProfiles] = await pool.execute(
+            "SELECT id FROM farmer_profiles WHERE user_id = ?",
+            [userId]
+        );
+
+        if (existingProfiles.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: "Farmer profile already exists"
+            });
+        }
+
         const [result] = await pool.execute(
             `INSERT INTO farmer_profiles
-            (state, district, land_size, land_unit, crop_type, farming_type)
-            VALUES (?, ?, ?, ?, ?, ?)`,
+            (
+                user_id,
+                state,
+                district,
+                land_size,
+                land_unit,
+                crop_type,
+                farming_type
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
+                userId,
                 state,
                 district,
                 landSize,
@@ -66,22 +88,14 @@ async function createProfile(req, res) {
     }
 }
 
-async function getProfile(req, res) {
+
+async function getMyProfile(req, res) {
     try {
-        const { id } = req.params;
-
-        const profileId = Number(id);
-
-        if (!Number.isInteger(profileId) || profileId <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Profile ID must be a valid positive integer"
-            });
-        }
+        const userId = req.user.userId;
 
         const [rows] = await pool.execute(
-            "SELECT * FROM farmer_profiles WHERE id = ?",
-            [profileId]
+            "SELECT * FROM farmer_profiles WHERE user_id = ?",
+            [userId]
         );
 
         if (rows.length === 0) {
@@ -106,18 +120,10 @@ async function getProfile(req, res) {
     }
 }
 
-async function updateProfile(req, res) {
+
+async function updateMyProfile(req, res) {
     try {
-        const { id } = req.params;
-
-        const profileId = Number(id);
-
-        if (!Number.isInteger(profileId) || profileId <= 0) {
-            return res.status(400).json({
-                success: false,
-                message: "Profile ID must be a valid positive integer"
-            });
-        }
+        const userId = req.user.userId;
 
         const {
             state,
@@ -159,7 +165,7 @@ async function updateProfile(req, res) {
                  land_unit = ?,
                  crop_type = ?,
                  farming_type = ?
-             WHERE id = ?`,
+             WHERE user_id = ?`,
             [
                 state,
                 district,
@@ -167,7 +173,7 @@ async function updateProfile(req, res) {
                 land_unit,
                 crop_type,
                 farming_type,
-                profileId
+                userId
             ]
         );
 
@@ -193,8 +199,9 @@ async function updateProfile(req, res) {
     }
 }
 
+
 module.exports = {
     createProfile,
-    getProfile,
-    updateProfile
+    getMyProfile,
+    updateMyProfile
 };
