@@ -1,35 +1,17 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_URL =
+    "http://localhost:5000/api/crop-recommendation/recommend";
 
-export const getCropRecommendations = async (input) => {
-    try {
-        const response = await fetch(
-            `${API_BASE_URL}/crop-recommendation/recommend`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(input)
-            }
-        );
+export const getCropRecommendations = async (data) => {
 
-        const data = await response.json();
+    const response = await fetch(API_URL, {
+        method: "POST",
 
-        if (!response.ok) {
-            throw new Error(
-                data.message ||
-                "Failed to get crop recommendations"
-            );
-        }
+        headers: {
+            "Content-Type": "application/json"
+        },
 
-        return data;
+        body: JSON.stringify(data)
+    });
 
-    } catch (error) {
-        console.error(
-            "Crop Recommendation API Error:",
-            error
-        );
-
-        throw error;
-    }
+    return await response.json();
 };

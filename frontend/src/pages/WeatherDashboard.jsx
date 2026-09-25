@@ -4,261 +4,243 @@ import {
     useState
 } from "react";
 
-
 import {
     fetchWeather
 } from "../services/weatherApi";
 
-
 import CurrentWeather
     from "../components/weather/CurrentWeather";
-
 
 import WeatherForecast
     from "../components/weather/WeatherForecast";
 
-
 import WeatherAlert
     from "../components/weather/WeatherAlert";
-
 
 import LanguageSelector
     from "../components/weather/LanguageSelector";
 
-
 import {
     useLanguage
 } from "../i18n/LanguageContext";
-
-
+import "./WeatherDashboard.css";
 
 const WeatherDashboard = () => {
 
-    /*
-     * Language
-     */
-    const {
-        t
-    } = useLanguage();
-
+    const { t } = useLanguage();
 
 
     /*
-     * Weather state
+     * ================================
+     * WEATHER STATE
+     * ================================
      */
+
     const [weather, setWeather] =
         useState(null);
-
 
     const [loading, setLoading] =
         useState(true);
 
-
     const [error, setError] =
         useState(null);
 
-
     const [lastUpdated, setLastUpdated] =
         useState(null);
-
 
     const [locationLoading, setLocationLoading] =
         useState(true);
 
 
-
     /*
-     * Get farmer's current location
+     * ================================
+     * GET FARMER LOCATION
+     * ================================
      */
-    const getFarmerLocation =
-        () => {
 
-            return new Promise(
-                (resolve, reject) => {
+    const getFarmerLocation = () => {
 
-                    if (
-                        !navigator.geolocation
-                    ) {
+        return new Promise(
+            (resolve, reject) => {
+
+                if (!navigator.geolocation) {
+
+                    reject(
+                        new Error(
+                            "Geolocation is not supported by this browser."
+                        )
+                    );
+
+                    return;
+                }
+
+
+                navigator.geolocation.getCurrentPosition(
+
+                    (position) => {
+
+                        resolve({
+
+                            latitude:
+                                position.coords.latitude,
+
+                            longitude:
+                                position.coords.longitude
+
+                        });
+
+                    },
+
+
+                    (error) => {
+
+                        let message =
+                            "Unable to get your location.";
+
+
+                        switch (error.code) {
+
+                            case error.PERMISSION_DENIED:
+
+                                message =
+                                    "Location permission was denied. Please allow location access to view weather for your farm.";
+
+                                break;
+
+
+                            case error.POSITION_UNAVAILABLE:
+
+                                message =
+                                    "Your current location is unavailable.";
+
+                                break;
+
+
+                            case error.TIMEOUT:
+
+                                message =
+                                    "Location request timed out. Please try again.";
+
+                                break;
+
+
+                            default:
+
+                                message =
+                                    "Unable to determine your location.";
+                        }
+
 
                         reject(
-                            new Error(
-                                "Geolocation is not supported by this browser."
-                            )
+                            new Error(message)
                         );
+                    },
 
-                        return;
+
+                    {
+                        enableHighAccuracy: true,
+
+                        timeout: 10000,
+
+                        maximumAge: 300000
                     }
-
-
-                    navigator.geolocation.getCurrentPosition(
-
-                        (position) => {
-
-                            resolve({
-
-                                latitude:
-                                    position.coords.latitude,
-
-                                longitude:
-                                    position.coords.longitude
-
-                            });
-                        },
-
-
-                        (error) => {
-
-                            let message =
-                                "Unable to get your location.";
-
-
-                            switch (
-                                error.code
-                            ) {
-
-                                case error.PERMISSION_DENIED:
-
-                                    message =
-                                        "Location permission was denied. Please allow location access to view weather for your farm.";
-
-                                    break;
-
-
-                                case error.POSITION_UNAVAILABLE:
-
-                                    message =
-                                        "Your current location is unavailable.";
-
-                                    break;
-
-
-                                case error.TIMEOUT:
-
-                                    message =
-                                        "Location request timed out. Please try again.";
-
-                                    break;
-
-
-                                default:
-
-                                    message =
-                                        "Unable to determine your location.";
-                            }
-
-
-                            reject(
-                                new Error(message)
-                            );
-                        },
-
-
-                        {
-                            enableHighAccuracy:
-                                true,
-
-                            timeout:
-                                10000,
-
-                            maximumAge:
-                                300000
-                        }
-                    );
-                }
-            );
-        };
-
-
-
-    /*
-     * Load weather
-     */
-    const loadWeather =
-        useCallback(
-            async () => {
-
-                try {
-
-                    setLoading(true);
-
-                    setLocationLoading(true);
-
-                    setError(null);
-
-
-                    /*
-                     * Get farmer location
-                     */
-                    const location =
-                        await getFarmerLocation();
-
-
-                    setLocationLoading(false);
-
-
-                    /*
-                     * Fetch weather
-                     */
-                    const response =
-                        await fetchWeather(
-
-                            location.latitude,
-
-                            location.longitude
-                        );
-
-
-                    if (
-                        !response.success
-                    ) {
-
-                        throw new Error(
-                            response.message ||
-                            "Weather data unavailable."
-                        );
-                    }
-
-
-                    setWeather(
-                        response.data
-                    );
-
-
-                    setLastUpdated(
-                        new Date()
-                    );
-
-
-                } catch (err) {
-
-                    console.error(
-                        "Weather Error:",
-                        err
-                    );
-
-
-                    setError(
-                        err.message ||
-                        "Unable to load weather information."
-                    );
-
-
-                } finally {
-
-                    setLoading(false);
-
-                    setLocationLoading(false);
-                }
-
-            },
-            []
+                );
+            }
         );
-
+    };
 
 
     /*
-     * Load weather when page opens
+     * ================================
+     * LOAD WEATHER
+     * ================================
      */
+
+    const loadWeather = useCallback(
+        async () => {
+
+            try {
+
+                setLoading(true);
+
+                setLocationLoading(true);
+
+                setError(null);
+
+
+                /*
+                 * Get farmer location
+                 */
+
+                const location =
+                    await getFarmerLocation();
+
+
+                setLocationLoading(false);
+
+
+                /*
+                 * Fetch weather
+                 */
+
+                const response =
+                    await fetchWeather(
+                        location.latitude,
+                        location.longitude
+                    );
+
+
+                if (!response.success) {
+
+                    throw new Error(
+                        response.message ||
+                        "Weather data unavailable."
+                    );
+                }
+
+
+                setWeather(
+                    response.data
+                );
+
+
+                setLastUpdated(
+                    new Date()
+                );
+
+
+            } catch (err) {
+
+                console.error(
+                    "Weather Error:",
+                    err
+                );
+
+
+                setError(
+                    err.message ||
+                    "Unable to load weather information."
+                );
+
+
+            } finally {
+
+                setLoading(false);
+
+                setLocationLoading(false);
+            }
+
+        },
+        []
+    );
+
+
+    /*
+     * ================================
+     * LOAD WEATHER ON PAGE OPEN
+     * ================================
+     */
+
     useEffect(() => {
 
         loadWeather();
@@ -266,10 +248,12 @@ const WeatherDashboard = () => {
     }, [loadWeather]);
 
 
-
     /*
-     * Loading screen
+     * ================================
+     * LOADING SCREEN
+     * ================================
      */
+
     if (loading) {
 
         return (
@@ -291,11 +275,8 @@ const WeatherDashboard = () => {
                     <p>
 
                         {locationLoading
-
                             ? t.detectingLocation
-
                             : t.fetchingWeather
-
                         }
 
                     </p>
@@ -314,10 +295,12 @@ const WeatherDashboard = () => {
     }
 
 
-
     /*
-     * Error screen
+     * ================================
+     * ERROR SCREEN
+     * ================================
      */
+
     if (error) {
 
         return (
@@ -364,13 +347,12 @@ const WeatherDashboard = () => {
     }
 
 
-
     /*
-     * Safety check
-     *
-     * Prevents blank page if weather data
-     * has not loaded correctly.
+     * ================================
+     * SAFETY CHECK
+     * ================================
      */
+
     if (
         !weather ||
         !weather.current ||
@@ -409,10 +391,12 @@ const WeatherDashboard = () => {
     }
 
 
-
     /*
-     * Main dashboard
+     * ================================
+     * MAIN WEATHER DASHBOARD
+     * ================================
      */
+
     return (
 
         <div className="weather-page">
@@ -420,9 +404,9 @@ const WeatherDashboard = () => {
             <main className="weather-dashboard">
 
 
-                {/* =========================================
+                {/* =====================================
                     HEADER
-                ========================================= */}
+                ===================================== */}
 
                 <header className="weather-header">
 
@@ -449,9 +433,7 @@ const WeatherDashboard = () => {
 
 
                             <p className="header-description">
-
                                 {t.weatherDescription}
-
                             </p>
 
                         </div>
@@ -459,16 +441,14 @@ const WeatherDashboard = () => {
                     </div>
 
 
-
                     {/* RIGHT SIDE */}
 
                     <div className="header-right">
 
 
-                        {/* LANGUAGE SELECTOR */}
+                        {/* LANGUAGE */}
 
                         <LanguageSelector />
-
 
 
                         {/* LOCATION */}
@@ -502,8 +482,7 @@ const WeatherDashboard = () => {
                         </div>
 
 
-
-                        {/* REFRESH BUTTON */}
+                        {/* REFRESH */}
 
                         <button
                             className="refresh-button"
@@ -519,16 +498,14 @@ const WeatherDashboard = () => {
 
                         </button>
 
-
                     </div>
 
                 </header>
 
 
-
-                {/* =========================================
+                {/* =====================================
                     STATUS BAR
-                ========================================= */}
+                ===================================== */}
 
                 <div className="weather-status-bar">
 
@@ -542,31 +519,19 @@ const WeatherDashboard = () => {
                     </div>
 
 
-
                     <div className="updated-time">
 
                         🕐 {t.lastUpdated}:{" "}
 
-
                         {lastUpdated
 
                             ? lastUpdated.toLocaleTimeString(
-
                                 "en-IN",
-
                                 {
-
-                                    hour:
-                                        "2-digit",
-
-                                    minute:
-                                        "2-digit",
-
-                                    second:
-                                        "2-digit"
-
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit"
                                 }
-
                             )
 
                             : "Just now"
@@ -578,60 +543,37 @@ const WeatherDashboard = () => {
                 </div>
 
 
-
-                {/* =========================================
-                    CURRENT WEATHER CARDS
-                ========================================= */}
+                {/* =====================================
+                    CURRENT WEATHER
+                ===================================== */}
 
                 <CurrentWeather
-
-                    weather={
-                        weather.current
-                    }
-
-                    soilType={
-                        weather.soilType
-                    }
-
-                    forecast={
-                        weather.forecast
-                    }
-
+                    weather={weather.current}
+                    forecast={weather.forecast}
                 />
 
 
-
-                {/* =========================================
+                {/* =====================================
                     7 DAY FORECAST
-                ========================================= */}
+                ===================================== */}
 
                 <WeatherForecast
-
-                    forecast={
-                        weather.forecast
-                    }
-
+                    forecast={weather.forecast}
                 />
 
 
-
-                {/* =========================================
+                {/* =====================================
                     SMART FARMING ALERTS
-                ========================================= */}
+                ===================================== */}
 
                 <WeatherAlert
-
-                    forecast={
-                        weather.forecast
-                    }
-
+                    forecast={weather.forecast}
                 />
 
 
-
-                {/* =========================================
+                {/* =====================================
                     FOOTER
-                ========================================= */}
+                ===================================== */}
 
                 <footer className="weather-footer">
 
@@ -644,13 +586,10 @@ const WeatherDashboard = () => {
 
 
                         <span>
-
                             {t.smartFarmingStarts}
-
                         </span>
 
                     </div>
-
 
 
                     <div className="data-source">
@@ -658,7 +597,6 @@ const WeatherDashboard = () => {
                         {t.poweredBy}
 
                     </div>
-
 
                 </footer>
 
@@ -668,7 +606,6 @@ const WeatherDashboard = () => {
         </div>
     );
 };
-
 
 
 export default WeatherDashboard;
