@@ -1,4 +1,3 @@
-
 import {
     StrictMode
 } from "react";
@@ -32,4 +31,3 @@ createRoot(
     </StrictMode>
 
 );
-
