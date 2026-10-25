@@ -1,15 +1,17 @@
+
 import { useEffect, useState } from "react";
 import {
-  BrowserRouter,
   Routes,
   Route,
   Navigate,
   Link,
-  useLocation
+  useLocation,
 } from "react-router-dom";
 
 import WeatherDashboard from "./pages/WeatherDashboard";
 import CropRecommendation from "./pages/CropRecommendation";
+import FarmerDashboard from "./pages/FarmerDashboard";
+import DiseaseDashboard from "./pages/DiseaseDashboard";
 import Auth from "./components/Auth";
 
 import "./App.css";
@@ -21,6 +23,9 @@ const BACKEND_URL = "http://localhost:5000";
  */
 function Navigation({ user, onLogout }) {
   const location = useLocation();
+
+  const isActive = (path) =>
+    location.pathname === path ? "nav-link active" : "nav-link";
 
   return (
     <header className="header">
@@ -34,38 +39,31 @@ function Navigation({ user, onLogout }) {
           display: "flex",
           alignItems: "center",
           gap: "10px",
-          flexWrap: "wrap"
+          flexWrap: "wrap",
         }}
       >
+        <Link to="/dashboard" className={isActive("/dashboard")}>
+          Dashboard
+        </Link>
+
         <Link
           to="/crop-recommendation"
-          className={
-            location.pathname === "/crop-recommendation"
-              ? "nav-link active"
-              : "nav-link"
-          }
+          className={isActive("/crop-recommendation")}
         >
           Crop Recommendation
         </Link>
 
-        <Link
-          to="/weather"
-          className={
-            location.pathname === "/weather"
-              ? "nav-link active"
-              : "nav-link"
-          }
-        >
+        <Link to="/disease" className={isActive("/disease")}>
+          Disease Detection
+        </Link>
+
+        <Link to="/weather" className={isActive("/weather")}>
           Weather
         </Link>
 
         <Link
           to="/government-schemes"
-          className={
-            location.pathname === "/government-schemes"
-              ? "nav-link active"
-              : "nav-link"
-          }
+          className={isActive("/government-schemes")}
         >
           Government Schemes
         </Link>
@@ -76,10 +74,7 @@ function Navigation({ user, onLogout }) {
           </span>
         )}
 
-        <button
-          className="change-profile-button"
-          onClick={onLogout}
-        >
+        <button className="change-profile-button" onClick={onLogout}>
           Logout
         </button>
       </nav>
@@ -91,28 +86,22 @@ function Navigation({ user, onLogout }) {
  * Government Schemes page.
  */
 function GovernmentSchemes({
-  user,
   profile,
   schemes,
   loading,
   error,
   onRetry,
-  onEditProfile
+  onEditProfile,
 }) {
   return (
     <main className="container">
-
       <section className="welcome-section">
         <h2>Government Schemes</h2>
-
-        <p>
-          Government schemes relevant to your farming profile
-        </p>
+        <p>Government schemes relevant to your farming profile.</p>
       </section>
 
       {profile && (
         <section className="profile-card">
-
           <div className="profile-title-row">
             <h3>Your Farmer Profile</h3>
 
@@ -125,7 +114,6 @@ function GovernmentSchemes({
           </div>
 
           <div className="profile-grid">
-
             <div>
               <span>State</span>
               <strong>{profile.state}</strong>
@@ -152,228 +140,136 @@ function GovernmentSchemes({
               <span>Farming Type</span>
               <strong>{profile.farming_type}</strong>
             </div>
-
           </div>
         </section>
       )}
 
       {loading && (
         <div className="status">
-
           <div className="loader"></div>
-
-          <p>
-            Finding relevant government schemes...
-          </p>
-
+          <p>Finding relevant government schemes...</p>
         </div>
       )}
 
       {error && !loading && (
         <div className="error-box">
-
           <p>{error}</p>
-
-          <button onClick={onRetry}>
-            Try Again
-          </button>
-
+          <button onClick={onRetry}>Try Again</button>
         </div>
       )}
 
-      {!loading &&
-        !error &&
-        schemes.length === 0 && (
-          <div className="status">
+      {!loading && !error && schemes.length === 0 && (
+        <div className="status">
+          <h3>No schemes found</h3>
+          <p>
+            No relevant government schemes were found for your current
+            profile.
+          </p>
+        </div>
+      )}
 
-            <h3>No schemes found</h3>
-
-            <p>
-              No relevant government schemes were found
-              for your current profile.
-            </p>
-
+      {!loading && !error && schemes.length > 0 && (
+        <section className="schemes-section">
+          <div className="section-heading">
+            <h2>Recommended Schemes</h2>
+            <span>{schemes.length} schemes found</span>
           </div>
-        )}
 
-      {!loading &&
-        !error &&
-        schemes.length > 0 && (
+          <div className="scheme-grid">
+            {schemes.map((scheme, index) => (
+              <article
+                className="scheme-card"
+                key={`${scheme.scheme_name}-${index}`}
+              >
+                <div className="scheme-header">
+                  <span className="scheme-number">{index + 1}</span>
+                  <span className="scheme-state">{scheme.state}</span>
+                </div>
 
-          <section className="schemes-section">
+                <h3>{scheme.scheme_name}</h3>
+                <p className="description">{scheme.description}</p>
 
-            <div className="section-heading">
-
-              <h2>
-                Recommended Schemes
-              </h2>
-
-              <span>
-                {schemes.length} schemes found
-              </span>
-
-            </div>
-
-            <div className="scheme-grid">
-
-              {schemes.map((scheme, index) => (
-
-                <article
-                  className="scheme-card"
-                  key={`${scheme.scheme_name}-${index}`}
-                >
-
-                  <div className="scheme-header">
-
-                    <span className="scheme-number">
-                      {index + 1}
-                    </span>
-
-                    <span className="scheme-state">
-                      {scheme.state}
-                    </span>
-
-                  </div>
-
-                  <h3>
-                    {scheme.scheme_name}
-                  </h3>
-
-                  <p className="description">
-                    {scheme.description}
-                  </p>
-
-                  <div className="details">
-
-                    {scheme.benefits?.length > 0 && (
-
-                      <div className="detail-section">
-
-                        <h4>Benefits</h4>
-
-                        <ul>
-
-                          {scheme.benefits.map(
-                            (benefit, benefitIndex) => (
-
-                              <li key={benefitIndex}>
-                                {benefit}
-                              </li>
-
-                            )
-                          )}
-
-                        </ul>
-
-                      </div>
-                    )}
-
-                    {scheme.eligibility?.length > 0 && (
-
-                      <div className="detail-section">
-
-                        <h4>Eligibility</h4>
-
-                        <ul>
-
-                          {scheme.eligibility.map(
-                            (item, eligibilityIndex) => (
-
-                              <li key={eligibilityIndex}>
-                                {item}
-                              </li>
-
-                            )
-                          )}
-
-                        </ul>
-
-                      </div>
-                    )}
-
-                  </div>
-
-                  {scheme.application_type ===
-                  "myscheme_fallback" ? (
-
-                    <a
-                      className="apply-button"
-                      href={scheme.application_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Find Scheme on myScheme
-                    </a>
-
-                  ) : scheme.application_url ? (
-
-                    <a
-                      className="apply-button"
-                      href={scheme.application_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Apply / Register
-                    </a>
-
-                  ) : (
-
-                    <div className="no-link">
-                      Official application link unavailable
+                <div className="details">
+                  {scheme.benefits?.length > 0 && (
+                    <div className="detail-section">
+                      <h4>Benefits</h4>
+                      <ul>
+                        {scheme.benefits.map((benefit, benefitIndex) => (
+                          <li key={benefitIndex}>{benefit}</li>
+                        ))}
+                      </ul>
                     </div>
-
                   )}
 
-                </article>
-              ))}
+                  {scheme.eligibility?.length > 0 && (
+                    <div className="detail-section">
+                      <h4>Eligibility</h4>
+                      <ul>
+                        {scheme.eligibility.map((item, eligibilityIndex) => (
+                          <li key={eligibilityIndex}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
 
-            </div>
-
-          </section>
-        )}
-
+                {scheme.application_type === "myscheme_fallback" ? (
+                  <a
+                    className="apply-button"
+                    href={scheme.application_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Find Scheme on myScheme
+                  </a>
+                ) : scheme.application_url ? (
+                  <a
+                    className="apply-button"
+                    href={scheme.application_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Apply / Register
+                  </a>
+                ) : (
+                  <div className="no-link">
+                    Official application link unavailable
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
-
 
 /*
  * Main application.
  */
 function App() {
-
-  const [token, setToken] = useState(
+  const [token, setToken] = useState(() =>
     localStorage.getItem("agriguard_token")
   );
 
   const [user, setUser] = useState(null);
-
-  const [authMode, setAuthMode] =
-    useState("login");
+  const [authMode, setAuthMode] = useState("login");
 
   const [authData, setAuthData] = useState({
     name: "",
     email: "",
-    password: ""
+    password: "",
   });
 
   const [profile, setProfile] = useState(null);
-
   const [schemes, setSchemes] = useState([]);
 
-  const [loading, setLoading] =
-    useState(false);
-
-  const [savingProfile, setSavingProfile] =
-    useState(false);
-
-  const [authLoading, setAuthLoading] =
-    useState(false);
-
+  const [loading, setLoading] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const [showProfileForm, setShowProfileForm] =
-    useState(false);
+  const [showProfileForm, setShowProfileForm] = useState(false);
 
   const [formData, setFormData] = useState({
     state: "",
@@ -381,48 +277,37 @@ function App() {
     land_size: "",
     land_unit: "acres",
     crop_type: "",
-    farming_type: ""
+    farming_type: "",
   });
-
 
   /*
    * Save JWT token.
    */
   function saveToken(newToken, userData) {
-
-    localStorage.setItem(
-      "agriguard_token",
-      newToken
-    );
-
+    localStorage.setItem("agriguard_token", newToken);
     setToken(newToken);
     setUser(userData);
   }
-
 
   /*
    * Authentication input.
    */
   function handleAuthInputChange(event) {
-
     const { name, value } = event.target;
 
     setAuthData((previousData) => ({
       ...previousData,
-      [name]: value
+      [name]: value,
     }));
   }
-
 
   /*
    * Login / Register.
    */
   async function handleAuthSubmit(event) {
-
     event.preventDefault();
 
     try {
-
       setAuthLoading(true);
       setError("");
 
@@ -435,408 +320,251 @@ function App() {
         authMode === "login"
           ? {
               email: authData.email.trim(),
-              password: authData.password
+              password: authData.password,
             }
           : {
               name: authData.name.trim(),
               email: authData.email.trim(),
-              password: authData.password
+              password: authData.password,
             };
 
-      const response = await fetch(
-        `${BACKEND_URL}${endpoint}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-
-        throw new Error(
-          data.message ||
-            "Authentication failed"
-        );
+        throw new Error(data.message || "Authentication failed");
       }
 
-
-      /*
-       * Registration.
-       */
       if (authMode === "register") {
-
         setAuthMode("login");
 
         setAuthData({
           name: "",
           email: body.email,
-          password: ""
+          password: "",
         });
 
-        alert(
-          "Registration successful. Please login with your account."
-        );
-
+        alert("Registration successful. Please login with your account.");
         return;
       }
 
-
-      /*
-       * Login.
-       */
-      saveToken(
-        data.token,
-        data.user
-      );
+      saveToken(data.token, data.user);
 
       setAuthData({
         name: "",
         email: "",
-        password: ""
+        password: "",
       });
-
     } catch (error) {
-
-      console.error(
-        "Authentication Error:",
-        error
-      );
-
+      console.error("Authentication Error:", error);
       setError(
-        error.message ||
-          "Unable to authenticate. Please try again."
+        error.message || "Unable to authenticate. Please try again."
       );
-
     } finally {
-
       setAuthLoading(false);
     }
   }
-
-
-  /*
-   * Load farmer profile.
-   */
-  async function loadProfile() {
-
-    try {
-
-      setLoading(true);
-      setError("");
-
-      const response = await fetch(
-        `${BACKEND_URL}/api/profile/me`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-
-      const data = await response.json();
-
-
-      /*
-       * Profile doesn't exist.
-       */
-      if (response.status === 404) {
-
-        setProfile(null);
-        setSchemes([]);
-        setShowProfileForm(true);
-
-        return;
-      }
-
-
-      /*
-       * Invalid token.
-       */
-      if (response.status === 401) {
-
-        logout();
-
-        return;
-      }
-
-
-      if (!response.ok || !data.success) {
-
-        throw new Error(
-          data.message ||
-            "Failed to load farmer profile"
-        );
-      }
-
-      setProfile(data.data);
-      setShowProfileForm(false);
-
-      await fetchSchemes();
-
-    } catch (error) {
-
-      console.error(
-        "Profile Load Error:",
-        error
-      );
-
-      setError(
-        error.message ||
-          "Unable to load your farmer profile."
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  }
-
 
   /*
    * Fetch government schemes.
    */
   async function fetchSchemes() {
+    if (!token) return;
 
     try {
-
       setLoading(true);
       setError("");
 
-      const response = await fetch(
-        `${BACKEND_URL}/api/schemes/me`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/api/schemes/me`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json();
 
-
       if (response.status === 401) {
-
         logout();
-
         return;
       }
 
-
       if (response.status === 404) {
-
         setProfile(null);
         setSchemes([]);
         setShowProfileForm(true);
-
         return;
       }
 
-
       if (!response.ok || !data.success) {
-
         throw new Error(
-          data.message ||
-            "Failed to fetch government schemes"
+          data.message || "Failed to fetch government schemes"
         );
       }
 
       setProfile(data.profile);
       setSchemes(data.schemes || []);
       setShowProfileForm(false);
-
     } catch (error) {
-
-      console.error(
-        "Scheme Fetch Error:",
-        error
-      );
-
-      setError(
-        error.message ||
-          "Unable to load government schemes."
-      );
-
+      console.error("Scheme Fetch Error:", error);
+      setError(error.message || "Unable to load government schemes.");
     } finally {
-
       setLoading(false);
     }
   }
 
+  /*
+   * Load farmer profile.
+   */
+  async function loadProfile() {
+    if (!token) return;
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch(`${BACKEND_URL}/api/profile/me`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.status === 404) {
+        setProfile(null);
+        setSchemes([]);
+        setShowProfileForm(true);
+        return;
+      }
+
+      if (response.status === 401) {
+        logout();
+        return;
+      }
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to load farmer profile");
+      }
+
+      setProfile(data.data);
+      setShowProfileForm(false);
+
+      // Load schemes after the profile is retrieved.
+      await fetchSchemes();
+    } catch (error) {
+      console.error("Profile Load Error:", error);
+      setError(error.message || "Unable to load your farmer profile.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   /*
    * Profile form input.
    */
   function handleInputChange(event) {
-
     const { name, value } = event.target;
 
     setFormData((previousData) => ({
       ...previousData,
-      [name]: value
+      [name]: value,
     }));
   }
-
 
   /*
    * Save farmer profile.
    */
   async function handleProfileSubmit(event) {
-
     event.preventDefault();
 
     try {
-
       setSavingProfile(true);
       setError("");
 
-      const method = profile
-        ? "PUT"
-        : "POST";
+      const method = profile ? "PUT" : "POST";
+      const endpoint = profile ? "/api/profile/me" : "/api/profile";
 
-      const endpoint = profile
-        ? "/api/profile/me"
-        : "/api/profile";
+      const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          state: formData.state.trim(),
+          district: formData.district.trim(),
+          land_size: Number(formData.land_size),
+          land_unit: formData.land_unit,
+          crop_type: formData.crop_type.trim(),
+          farming_type: formData.farming_type.trim(),
+        }),
+      });
 
-      const response = await fetch(
-        `${BACKEND_URL}${endpoint}`,
-        {
-          method,
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            Authorization:
-              `Bearer ${token}`
-          },
-
-          body: JSON.stringify({
-
-            state:
-              formData.state.trim(),
-
-            district:
-              formData.district.trim(),
-
-            land_size:
-              Number(formData.land_size),
-
-            land_unit:
-              formData.land_unit,
-
-            crop_type:
-              formData.crop_type.trim(),
-
-            farming_type:
-              formData.farming_type.trim()
-          })
-        }
-      );
-
-      const data =
-        await response.json();
-
+      const data = await response.json();
 
       if (response.status === 401) {
-
         logout();
-
         return;
       }
 
-
       if (!response.ok || !data.success) {
-
-        throw new Error(
-          data.message ||
-            "Failed to save farmer profile"
-        );
+        throw new Error(data.message || "Failed to save farmer profile");
       }
 
-
+      // Reload the saved profile and related schemes.
       await loadProfile();
-
     } catch (error) {
-
-      console.error(
-        "Profile Save Error:",
-        error
-      );
-
-      setError(
-        error.message ||
-          "Unable to save farmer profile."
-      );
-
+      console.error("Profile Save Error:", error);
+      setError(error.message || "Unable to save farmer profile.");
     } finally {
-
       setSavingProfile(false);
     }
   }
-
 
   /*
    * Edit profile.
    */
   function editProfile() {
-
-    if (!profile) {
-      return;
-    }
+    if (!profile) return;
 
     setFormData({
-
-      state:
-        profile.state || "",
-
-      district:
-        profile.district || "",
-
-      land_size:
-        profile.land_size || "",
-
-      land_unit:
-        profile.land_unit || "acres",
-
-      crop_type:
-        profile.crop_type || "",
-
-      farming_type:
-        profile.farming_type || ""
+      state: profile.state || "",
+      district: profile.district || "",
+      land_size: profile.land_size ?? "",
+      land_unit: profile.land_unit || "acres",
+      crop_type: profile.crop_type || "",
+      farming_type: profile.farming_type || "",
     });
 
     setShowProfileForm(true);
     setError("");
   }
 
-
   /*
    * Logout.
    */
   function logout() {
-
-    localStorage.removeItem(
-      "agriguard_token"
-    );
+    localStorage.removeItem("agriguard_token");
 
     setToken(null);
     setUser(null);
     setProfile(null);
     setSchemes([]);
-
     setShowProfileForm(false);
 
     setAuthData({
       name: "",
       email: "",
-      password: ""
+      password: "",
     });
 
     setFormData({
@@ -845,114 +573,72 @@ function App() {
       land_size: "",
       land_unit: "acres",
       crop_type: "",
-      farming_type: ""
+      farming_type: "",
     });
 
     setError("");
   }
 
-
   /*
-   * Load profile after login.
+   * Load profile after login or page refresh.
    */
   useEffect(() => {
-
     if (token) {
       loadProfile();
     }
-
+    // Load when the authentication token changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-
   /*
-   * Login / Register.
+   * Login / Register page.
    */
   if (!token) {
-
     return (
       <Auth
         authMode={authMode}
         authData={authData}
         authLoading={authLoading}
         error={error}
-
-        onAuthInputChange={
-          handleAuthInputChange
-        }
-
-        onAuthSubmit={
-          handleAuthSubmit
-        }
-
+        onAuthInputChange={handleAuthInputChange}
+        onAuthSubmit={handleAuthSubmit}
         onSwitchMode={(mode) => {
-
           setAuthMode(mode);
           setError("");
-
         }}
       />
     );
   }
 
-
   /*
    * Farmer profile form.
    */
   if (showProfileForm) {
-
     return (
       <div className="app">
-
         <header className="header">
-
           <div>
-
             <h1>AgriGuard</h1>
-
-            <p>
-              Smart Agriculture Assistant for Farmers
-            </p>
-
+            <p>Smart Agriculture Assistant for Farmers</p>
           </div>
 
-          <button
-            className="change-profile-button"
-            onClick={logout}
-          >
+          <button className="change-profile-button" onClick={logout}>
             Logout
           </button>
-
         </header>
 
-
         <main className="container">
-
           <section className="welcome-section">
-
-            <h2>
-              Tell Us About Your Farm
-            </h2>
-
+            <h2>Tell Us About Your Farm</h2>
             <p>
-              Enter your farming details so we
-              can find relevant government schemes
-              for you.
+              Enter your farming details so we can find relevant government
+              schemes for you.
             </p>
-
           </section>
 
-
-          <form
-            className="profile-form"
-            onSubmit={handleProfileSubmit}
-          >
-
+          <form className="profile-form" onSubmit={handleProfileSubmit}>
             <div className="form-group">
-
-              <label htmlFor="state">
-                State
-              </label>
-
+              <label htmlFor="state">State</label>
               <input
                 id="state"
                 name="state"
@@ -962,16 +648,10 @@ function App() {
                 onChange={handleInputChange}
                 required
               />
-
             </div>
 
-
             <div className="form-group">
-
-              <label htmlFor="district">
-                District
-              </label>
-
+              <label htmlFor="district">District</label>
               <input
                 id="district"
                 name="district"
@@ -981,18 +661,11 @@ function App() {
                 onChange={handleInputChange}
                 required
               />
-
             </div>
 
-
             <div className="form-row">
-
               <div className="form-group">
-
-                <label htmlFor="land_size">
-                  Land Size
-                </label>
-
+                <label htmlFor="land_size">Land Size</label>
                 <input
                   id="land_size"
                   name="land_size"
@@ -1004,44 +677,24 @@ function App() {
                   onChange={handleInputChange}
                   required
                 />
-
               </div>
 
-
               <div className="form-group">
-
-                <label htmlFor="land_unit">
-                  Land Unit
-                </label>
-
+                <label htmlFor="land_unit">Land Unit</label>
                 <select
                   id="land_unit"
                   name="land_unit"
                   value={formData.land_unit}
                   onChange={handleInputChange}
                 >
-
-                  <option value="acres">
-                    Acres
-                  </option>
-
-                  <option value="hectares">
-                    Hectares
-                  </option>
-
+                  <option value="acres">Acres</option>
+                  <option value="hectares">Hectares</option>
                 </select>
-
               </div>
-
             </div>
 
-
             <div className="form-group">
-
-              <label htmlFor="crop_type">
-                Crops
-              </label>
-
+              <label htmlFor="crop_type">Crops</label>
               <input
                 id="crop_type"
                 name="crop_type"
@@ -1051,20 +704,11 @@ function App() {
                 onChange={handleInputChange}
                 required
               />
-
-              <small>
-                Enter multiple crops separated by commas.
-              </small>
-
+              <small>Enter multiple crops separated by commas.</small>
             </div>
 
-
             <div className="form-group">
-
-              <label htmlFor="farming_type">
-                Farming Type
-              </label>
-
+              <label htmlFor="farming_type">Farming Type</label>
               <select
                 id="farming_type"
                 name="farming_type"
@@ -1072,124 +716,79 @@ function App() {
                 onChange={handleInputChange}
                 required
               >
-
-                <option value="">
-                  Select farming type
-                </option>
-
-                <option value="Crop farming">
-                  Crop farming
-                </option>
-
-                <option value="Horticulture">
-                  Horticulture
-                </option>
-
-                <option value="Organic farming">
-                  Organic farming
-                </option>
-
-                <option value="Mixed farming">
-                  Mixed farming
-                </option>
-
-                <option value="Other">
-                  Other
-                </option>
-
+                <option value="">Select farming type</option>
+                <option value="Crop farming">Crop farming</option>
+                <option value="Horticulture">Horticulture</option>
+                <option value="Organic farming">Organic farming</option>
+                <option value="Mixed farming">Mixed farming</option>
+                <option value="Other">Other</option>
               </select>
-
             </div>
 
-
             {error && (
-
               <div className="error-box">
                 <p>{error}</p>
               </div>
-
             )}
-
 
             <button
               className="save-profile-button"
               type="submit"
               disabled={savingProfile}
             >
-
               {savingProfile
                 ? "Saving Profile..."
                 : profile
-                ? "Update Profile & Find Schemes"
-                : "Save Profile & Find Schemes"}
-
+                  ? "Update Profile & Find Schemes"
+                  : "Save Profile & Find Schemes"}
             </button>
-
           </form>
-
         </main>
 
-
         <footer>
-
-          <p>
-            AgriGuard • Helping farmers make smarter decisions
-          </p>
-
+          <p>AgriGuard • Helping farmers make smarter decisions</p>
         </footer>
-
       </div>
     );
   }
 
-
   /*
-   * Logged-in application.
+   * Logged-in application and routes.
    */
   return (
-
     <div className="app">
-
-      <Navigation
-        user={user}
-        onLogout={logout}
-      />
-
+      <Navigation user={user} onLogout={logout} />
 
       <Routes>
-
         <Route
           path="/"
-          element={
-            <Navigate
-              to="/crop-recommendation"
-              replace
-            />
-          }
+          element={<Navigate to="/dashboard" replace />}
         />
 
+        <Route
+          path="/dashboard"
+          element={<FarmerDashboard user={user} profile={profile} />}
+        />
 
         <Route
           path="/crop-recommendation"
-          element={
-            <CropRecommendation />
-          }
+          element={<CropRecommendation />}
         />
 
+        <Route
+          path="/disease"
+          element={<DiseaseDashboard />}
+        />
 
         <Route
           path="/weather"
-          element={
-            <WeatherDashboard />
-          }
+          element={<WeatherDashboard />}
         />
-
 
         <Route
           path="/government-schemes"
           element={
             <GovernmentSchemes
-              user={user}
               profile={profile}
               schemes={schemes}
               loading={loading}
@@ -1200,31 +799,17 @@ function App() {
           }
         />
 
-
         <Route
           path="*"
-          element={
-            <Navigate
-              to="/crop-recommendation"
-              replace
-            />
-          }
+          element={<Navigate to="/dashboard" replace />}
         />
-
       </Routes>
 
-
       <footer>
-
-        <p>
-          AgriGuard • Helping farmers make smarter decisions
-        </p>
-
+        <p>AgriGuard • Helping farmers make smarter decisions</p>
       </footer>
-
     </div>
   );
 }
-
 
 export default App;

@@ -1,0 +1,242 @@
+
+.farmer-dashboard {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 32px;
+  color: #203629;
+}
+
+.dashboard-welcome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 36px;
+  border-radius: 24px;
+  background: linear-gradient(120deg, #173f2b, #34734a);
+  color: #fff;
+}
+
+.dashboard-eyebrow {
+  display: inline-block;
+  color: #6c9b78;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.dashboard-welcome .dashboard-eyebrow {
+  color: #d2edcb;
+}
+
+.dashboard-welcome h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.15;
+}
+
+.dashboard-welcome p {
+  max-width: 650px;
+  margin: 0;
+  color: #e0eee3;
+  line-height: 1.7;
+}
+
+.welcome-icon {
+  display: grid;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 24px;
+  background: #ffffff1c;
+  font-size: 52px;
+}
+
+.farm-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0 40px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid #e3eae4;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.summary-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 14px;
+  background: #edf6ed;
+  font-size: 24px;
+}
+
+.summary-item p {
+  margin: 0 0 7px;
+  color: #728075;
+  font-size: 13px;
+}
+
+.summary-item h3 {
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 16px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.section-heading h2 {
+  margin: 8px 0 0;
+  font-size: 28px;
+}
+
+.module-count {
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: #edf5ed;
+  color: #28643c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.module-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid #e4eae5;
+  border-radius: 18px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.module-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px #20362912;
+}
+
+.module-card:focus-visible {
+  outline: 3px solid #368653;
+  outline-offset: 4px;
+}
+
+.module-icon {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 16px;
+  font-size: 27px;
+}
+
+.module-icon.green { background: #e7f5e9; }
+.module-icon.orange { background: #fff0df; }
+.module-icon.blue { background: #e7f1ff; }
+.module-icon.purple { background: #f0eaff; }
+.module-icon.sky { background: #e4f7fa; }
+
+.module-card h3 {
+  margin: 22px 0 9px;
+  font-size: 19px;
+}
+
+.module-card p {
+  flex: 1;
+  margin: 0 0 22px;
+  color: #718075;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.module-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #287542;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.dashboard-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 30px;
+  padding: 24px;
+  border: 1px solid #dcebdd;
+  border-radius: 16px;
+  background: #f4faf3;
+}
+
+.dashboard-tip > span {
+  font-size: 28px;
+}
+
+.dashboard-tip h3 {
+  margin: 0 0 8px;
+}
+
+.dashboard-tip p {
+  margin: 0;
+  color: #627267;
+  line-height: 1.7;
+}
+
+@media (max-width: 900px) {
+  .module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .farm-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .farmer-dashboard {
+    padding: 18px;
+  }
+
+  .dashboard-welcome {
+    padding: 24px;
+  }
+
+  .welcome-icon {
+    display: none;
+  }
+
+  .module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+  }
+}
