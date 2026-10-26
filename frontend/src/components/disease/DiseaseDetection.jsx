@@ -1,64 +1,114 @@
-import React, { useState, useRef } from 'react';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../../i18n/LanguageContext';
-import { createSpeechRecognizer, isSpeechRecognitionSupported } from '../../utils/speechRecognition';
+import {
+    createSpeechRecognizer,
+    isSpeechRecognitionSupported
+} from '../../utils/speechRecognition';
+
+import './DiseaseDetection.css';
 
 const DiseaseDetection = ({ onAnalyze, loading }) => {
     const { t, language } = useLanguage();
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [fileInfo, setFileInfo] = useState(null);
     const [notes, setNotes] = useState('');
     const [isListening, setIsListening] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
+    const [error, setError] = useState('');
+
     const fileInputRef = useRef(null);
+    const recognizerRef = useRef(null);
+
+    const isTamil = language === 'ta';
+
+    // Release the previous preview URL to avoid memory leaks.
+    useEffect(() => {
+        return () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
 
     const handleFile = (file) => {
-        if (file && file.type.startsWith('image/')) {
-            setSelectedFile(file);
-            setPreviewUrl(URL.createObjectURL(file));
-            setFileInfo({
-                name: file.name,
-                size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
-            });
-        } else {
-            alert(language === 'ta' ? 'தயவுசெய்து செல்லுபடியாகும் புகைப்படத்தைத் தேர்ந்தெடுக்கவும்.' : 'Please select a valid image file.');
+        if (!file) return;
+
+        const allowedTypes = [
+            'image/jpeg',
+            'image/png',
+            'image/webp'
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            setError(
+                isTamil
+                    ? 'JPG, PNG அல்லது WEBP படத்தைத் தேர்ந்தெடுக்கவும்.'
+                    : 'Please select a JPG, PNG, or WEBP image.'
+            );
+            return;
         }
+
+        // Prevent unexpectedly large uploads.
+        if (file.size > 10 * 1024 * 1024) {
+            setError(
+                isTamil
+                    ? 'படத்தின் அளவு 10 MB-க்கு குறைவாக இருக்க வேண்டும்.'
+                    : 'Image size must be 10 MB or less.'
+            );
+            return;
+        }
+
+        setError('');
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+        setFileInfo({
+            name: file.name,
+            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+        });
     };
 
-    const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-            handleFile(e.target.files[0]);
-        }
+    const handleFileChange = (event) => {
+        handleFile(event.target.files?.[0]);
+        // Allow selecting the same file again.
+        event.target.value = '';
     };
 
-    const handleDrop = (e) => {
-        e.preventDefault();
+    const handleDrop = (event) => {
+        event.preventDefault();
         setIsDragging(false);
-        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-            handleFile(e.dataTransfer.files[0]);
-        }
+        handleFile(event.dataTransfer.files?.[0]);
     };
 
-    const handleDragOver = (e) => {
-        e.preventDefault();
+    const handleDragOver = (event) => {
+        event.preventDefault();
         setIsDragging(true);
     };
 
-    const handleDragLeave = (e) => {
-        e.preventDefault();
-        setIsDragging(false);
+    const handleDragLeave = (event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+            setIsDragging(false);
+        }
     };
 
-    const clearSelectedImage = (e) => {
-        e.stopPropagation();
+    const clearSelectedImage = () => {
         setSelectedFile(null);
         setPreviewUrl(null);
         setFileInfo(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
+        setError('');
+
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
     };
 
     const toggleVoiceInput = () => {
         if (isListening) {
+            recognizerRef.current?.stop?.();
+            recognizerRef.current?.abort?.();
+            recognizerRef.current = null;
             setIsListening(false);
             return;
         }
@@ -66,119 +116,235 @@ const DiseaseDetection = ({ onAnalyze, loading }) => {
         const recognizer = createSpeechRecognizer(
             language,
             (transcript) => {
-                setNotes((prev) => (prev ? `${prev} ${transcript}` : transcript));
+                setNotes((previous) =>
+                    previous ? `${previous} ${transcript}` : transcript
+                );
                 setIsListening(false);
+                recognizerRef.current = null;
             },
-            (error) => {
-                alert(`Voice input notice: ${error}`);
+            (recognitionError) => {
+                setError(
+                    `${isTamil ? 'குரல் உள்ளீட்டுப் பிழை' : 'Voice input error'}: ${recognitionError}`
+                );
                 setIsListening(false);
+                recognizerRef.current = null;
             },
-            () => setIsListening(false)
+            () => {
+                setIsListening(false);
+                recognizerRef.current = null;
+            }
         );
 
-        if (recognizer) {
+        if (!recognizer) {
+            setError(
+                isTamil
+                    ? 'குரல் உள்ளீடு தற்போது கிடைக்கவில்லை.'
+                    : 'Voice input is currently unavailable.'
+            );
+            return;
+        }
+
+        try {
+            recognizerRef.current = recognizer;
+            setError('');
             setIsListening(true);
             recognizer.start();
+        } catch {
+            recognizerRef.current = null;
+            setIsListening(false);
+            setError(
+                isTamil
+                    ? 'குரல் உள்ளீட்டைத் தொடங்க முடியவில்லை.'
+                    : 'Could not start voice input.'
+            );
         }
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!selectedFile) {
-            alert(language === 'ta' ? 'தயவுசெய்து ஒரு படத்தைத் தேர்ந்தெடுக்கவும்.' : 'Please select a crop leaf image first.');
-            return;
-        }
+    const handleSubmit = (event) => {
+        event.preventDefault();
+
+        if (!selectedFile || loading) return;
+
+        setError('');
         onAnalyze(selectedFile, notes);
     };
 
     return (
-        <div className="disease-upload-card shadow-lg">
-            <div className="card-top-bar">
-                <div className="header-badge">🌱 AI DIAGNOSTICS</div>
-                <h2>📸 {t.diseaseDetection || 'AI Crop Disease Detection'}</h2>
-                <p>{t.uploadImage || 'Upload a clear leaf photo for instant AI diagnosis'}</p>
-            </div>
+        <section className="disease-upload-card">
+            <header className="card-top-bar">
+                <span className="header-badge">
+                    <span aria-hidden="true">✦</span> AI-POWERED DIAGNOSTICS
+                </span>
+
+                <h2>
+                    <span aria-hidden="true">🌿</span>{' '}
+                    {t.diseaseDetection || 'Crop Disease Detection'}
+                </h2>
+
+                <p>
+                    {t.uploadImage ||
+                        'Upload a clear photo of an affected leaf to analyze possible diseases.'}
+                </p>
+
+                <div className="diagnostic-features">
+                    <span>✓ {isTamil ? 'படப் பகுப்பாய்வு' : 'Image analysis'}</span>
+                    <span>✓ {isTamil ? 'அறிகுறிகள்' : 'Symptom notes'}</span>
+                    <span>✓ {isTamil ? 'பரிந்துரைகள்' : 'Care guidance'}</span>
+                </div>
+            </header>
 
             <form onSubmit={handleSubmit} className="upload-card-body">
-                {/* Image Upload Dropzone */}
                 <input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    accept="image/*"
-                    style={{ display: 'none' }}
+                    accept="image/jpeg,image/png,image/webp"
+                    hidden
+                    aria-label={isTamil ? 'பயிர் புகைப்படத்தைத் தேர்ந்தெடு' : 'Select crop image'}
                 />
+
+                <div className="section-heading">
+                    <span className="step-number">01</span>
+                    <div>
+                        <h3>{isTamil ? 'பயிரின் புகைப்படம்' : 'Upload crop image'}</h3>
+                        <p>
+                            {isTamil
+                                ? 'பாதிக்கப்பட்ட இலையின் தெளிவான புகைப்படத்தைத் தேர்ந்தெடுக்கவும்.'
+                                : 'Choose a clear, well-lit photo of the affected leaf.'}
+                        </p>
+                    </div>
+                </div>
 
                 {!previewUrl ? (
                     <div
                         className={`dropzone-large ${isDragging ? 'dragging' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={isTamil ? 'புகைப்படத்தைப் பதிவேற்றவும்' : 'Upload a crop leaf photo'}
+                        onClick={() => fileInputRef.current?.click()}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                fileInputRef.current?.click();
+                            }
+                        }}
                         onDrop={handleDrop}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
-                        onClick={() => fileInputRef.current && fileInputRef.current.click()}
                     >
-                        <div className="dropzone-illustration">
+                        <div className="dropzone-illustration" aria-hidden="true">
                             <span className="icon-leaf">🌿</span>
                             <span className="icon-camera">📷</span>
                         </div>
-                        <h3>{t.takePhoto || 'Click or Drag & Drop Crop Leaf Photo'}</h3>
+
+                        <h3>
+                            {isDragging
+                                ? (isTamil ? 'படத்தை இங்கே விடவும்' : 'Drop your image here')
+                                : (isTamil ? 'படத்தைத் தேர்ந்தெடுக்கவும்' : 'Drag & drop your leaf photo')}
+                        </h3>
+
                         <p className="dropzone-subtitle">
-                            {language === 'ta'
-                                ? 'தெளிவான இலை புகைப்படத்தை பதிவேற்றவும் (JPG, PNG)'
-                                : 'Upload a clear, well-lit photo of the affected plant leaf'}
+                            {isTamil
+                                ? 'அல்லது உங்கள் சாதனத்திலிருந்து ஒரு படத்தைத் தேர்ந்தெடுக்கவும்'
+                                : 'Or browse your device to choose an image'}
                         </p>
+
                         <span className="browse-button-badge">
-                            📂 {language === 'ta' ? 'புகைப்படத்தைத் தேர்ந்தெடு' : 'Browse File'}
+                            📂 {isTamil ? 'புகைப்படத்தைத் தேர்ந்தெடு' : 'Choose image'}
+                        </span>
+
+                        <span className="file-requirements">
+                            JPG, PNG or WEBP · Max 10 MB
                         </span>
                     </div>
                 ) : (
-                    /* Image Preview Card */
                     <div className="image-preview-card">
                         <div className="preview-image-wrapper">
-                            <img src={previewUrl} alt="Selected Crop Leaf Preview" className="preview-img" />
+                            <img
+                                src={previewUrl}
+                                alt="Preview of selected crop leaf"
+                                className="preview-img"
+                            />
+
+                            <span className="image-ready-badge">
+                                ✓ {isTamil ? 'படம் தயார்' : 'Image ready'}
+                            </span>
+
                             <button
                                 type="button"
                                 className="remove-image-btn"
                                 onClick={clearSelectedImage}
-                                title={language === 'ta' ? 'நீக்கு' : 'Remove Image'}
+                                aria-label={isTamil ? 'படத்தை நீக்கு' : 'Remove selected image'}
+                                title={isTamil ? 'படத்தை நீக்கு' : 'Remove image'}
                             >
-                                ✖
+                                ×
                             </button>
                         </div>
+
                         <div className="preview-details">
                             <div className="file-meta">
-                                <span className="file-icon">🖼️</span>
-                                <div>
-                                    <strong className="file-name">{fileInfo?.name}</strong>
-                                    <span className="file-size">{fileInfo?.size}</span>
+                                <span className="file-icon" aria-hidden="true">🖼️</span>
+                                <div className="file-description">
+                                    <strong className="file-name">
+                                        {fileInfo?.name}
+                                    </strong>
+                                    <span className="file-size">
+                                        {fileInfo?.size}
+                                    </span>
                                 </div>
                             </div>
+
                             <button
                                 type="button"
                                 className="btn-change-image"
-                                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                                onClick={() => fileInputRef.current?.click()}
                             >
-                                🔄 {language === 'ta' ? 'படத்தை மாற்று' : 'Change Photo'}
+                                ↻ {isTamil ? 'படத்தை மாற்று' : 'Change image'}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Farmer Notes with Voice Input */}
-                <div className="notes-form-group mt-4">
+                {error && (
+                    <div className="disease-upload-error" role="alert">
+                        <span aria-hidden="true">⚠️</span> {error}
+                    </div>
+                )}
+
+                <div className="notes-form-group">
+                    <div className="section-heading">
+                        <span className="step-number">02</span>
+                        <div>
+                            <h3>
+                                {t.farmerNotes ||
+                                    (isTamil ? 'கூடுதல் அறிகுறிகள்' : 'Describe the symptoms')}
+                            </h3>
+                            <p>
+                                {isTamil
+                                    ? 'இலைகளில் காணப்படும் மாற்றங்களை எழுதவும் அல்லது பேசவும்.'
+                                    : 'Add any changes you have noticed on the plant.'}
+                            </p>
+                        </div>
+                    </div>
+
                     <div className="label-row">
                         <label htmlFor="farmer-notes">
-                            📝 {t.farmerNotes || 'Additional Symptoms / Observations'}
+                            {isTamil ? 'விவசாயியின் குறிப்புகள்' : 'Observations (optional)'}
                         </label>
+
                         {isSpeechRecognitionSupported() && (
                             <button
                                 type="button"
                                 className={`voice-input-btn ${isListening ? 'listening' : ''}`}
                                 onClick={toggleVoiceInput}
-                                title={t.voiceInput || 'Speak Voice Input'}
+                                aria-pressed={isListening}
                             >
-                                <span className="mic-icon">{isListening ? '🎙️' : '🎤'}</span>
-                                <span>{isListening ? (t.listening || 'Listening...') : (t.voiceInput || 'Voice Input')}</span>
+                                <span aria-hidden="true">
+                                    {isListening ? '🔴' : '🎤'}
+                                </span>
+                                {isListening
+                                    ? (t.listening || (isTamil ? 'கேட்கிறது...' : 'Listening...'))
+                                    : (t.voiceInput || (isTamil ? 'குரல் உள்ளீடு' : 'Use microphone'))}
                             </button>
                         )}
                     </div>
@@ -186,37 +352,60 @@ const DiseaseDetection = ({ onAnalyze, loading }) => {
                     <textarea
                         id="farmer-notes"
                         className="styled-textarea"
-                        rows="3"
+                        rows={4}
+                        maxLength={1000}
                         placeholder={
-                            language === 'ta'
-                                ? 'பாதிக்கப்பட்ட இலைகள், அறிகுறிகளை இங்கே பேசவும் அல்லது எழுதவும் (எ.கா: இலைகளில் பழுப்பு புள்ளிகள் உள்ளன)...'
-                                : 'Describe symptoms or tap the microphone to speak (e.g., yellow spots on lower leaves, wilting stems)...'
+                            isTamil
+                                ? 'உதாரணம்: இலைகளில் மஞ்சள் புள்ளிகள் உள்ளன; இலைகள் வாடுகின்றன...'
+                                : 'Example: Yellow spots on leaves, curling edges, wilting, or unusual growth...'
                         }
                         value={notes}
-                        onChange={(e) => setNotes(e.target.value)}
+                        onChange={(event) => setNotes(event.target.value)}
                     />
+
+                    <div className="notes-footer">
+                        <span>
+                            {isTamil ? 'அறிகுறிகளைச் சேர்ப்பது விருப்பமானது' : 'Adding symptoms is optional'}
+                        </span>
+                        <span>{notes.length}/1000</span>
+                    </div>
                 </div>
 
-                {/* Prominent Detect Disease CTA Button */}
+                <div className="analysis-info">
+                    <span aria-hidden="true">🔎</span>
+                    <p>
+                        {isTamil
+                            ? 'சிறந்த முடிவுகளுக்கு, பாதிக்கப்பட்ட இலையின் தெளிவான புகைப்படத்தைப் பயன்படுத்தவும்.'
+                            : 'For better results, use a sharp photo with the affected leaf clearly visible.'}
+                    </p>
+                </div>
+
                 <button
                     type="submit"
                     disabled={!selectedFile || loading}
-                    className="btn-detect-prominent mt-4"
+                    className="btn-detect-prominent"
                 >
                     {loading ? (
-                        <div className="loading-spinner-row">
-                            <span className="spinner-icon">🔄</span>
-                            <span>{language === 'ta' ? 'AI மூலம் பகுப்பாய்வு செய்யப்படுகிறது...' : 'AI Analyzing Leaf Photo...'}</span>
-                        </div>
+                        <span className="button-text-row">
+                            <span className="spinner-icon" aria-hidden="true" />
+                            {isTamil ? 'படம் பகுப்பாய்வு செய்யப்படுகிறது...' : 'Analyzing crop image...'}
+                        </span>
                     ) : (
-                        <div className="button-text-row">
-                            <span className="search-icon">🔍</span>
-                            <span>{language === 'ta' ? 'நோயைக் கண்டறியவும்' : 'Detect Disease Now'}</span>
-                        </div>
+                        <span className="button-text-row">
+                            <span aria-hidden="true">✦</span>
+                            {isTamil ? 'பயிர் நோயைக் கண்டறி' : 'Analyze crop for disease'}
+                            <span aria-hidden="true">→</span>
+                        </span>
                     )}
                 </button>
+
+                <p className="diagnosis-disclaimer">
+                    {isTamil
+                        ? 'AI முடிவு ஒரு ஆரம்ப வழிகாட்டுதல் மட்டுமே. உறுதியான நோயறிதலுக்கு வேளாண் நிபுணரை அணுகவும்.'
+                        : 'AI results are preliminary guidance, not a definitive diagnosis. Consult an agricultural expert when needed.'}
+                </p>
             </form>
-        </div>
+        </section>
     );
 };
 

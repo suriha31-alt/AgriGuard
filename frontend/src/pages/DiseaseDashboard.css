@@ -1,0 +1,133 @@
+
+/* Disease Dashboard */
+.disease-dashboard-wrapper {
+    width: 100%;
+    min-height: calc(100vh - 90px);
+    padding: 28px clamp(16px, 4vw, 48px);
+    box-sizing: border-box;
+    color: #183329;
+    background: linear-gradient(135deg, #f0faf3 0%, #f8fbf8 100%);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.disease-compact-header {
+    max-width: 1200px;
+    margin: 0 auto 28px;
+}
+
+.header-text-block {
+    margin-bottom: 24px;
+}
+
+.header-text-block h1 {
+    margin: 0 0 10px;
+    color: #176b3a;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.header-text-block p {
+    margin: 0;
+    color: #647568;
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.compact-tabs-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 8px;
+    background: #ffffff;
+    border: 1px solid #dceade;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgb(24 80 43 / 6%);
+}
+
+.compact-tabs-bar .tab-btn {
+    padding: 12px 18px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #42594a;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.compact-tabs-bar .tab-btn:hover {
+    background: #edf7ef;
+    color: #176b3a;
+}
+
+.compact-tabs-bar .tab-btn.active {
+    background: #176b3a;
+    color: #ffffff;
+}
+
+.disease-main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    min-width: 0;
+}
+
+.detection-flow-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+}
+
+.detection-flow-layout > *,
+.results-and-treatment-flow > * {
+    min-width: 0;
+}
+
+.results-and-treatment-flow {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    align-items: start;
+}
+
+.error-alert-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    background: #fff1f2;
+    color: #991b1b;
+}
+
+.error-alert-card p {
+    margin: 6px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.mt-3 {
+    margin-top: 12px;
+}
+
+@media (max-width: 700px) {
+    .disease-dashboard-wrapper {
+        padding: 20px 14px;
+    }
+
+    .compact-tabs-bar {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .compact-tabs-bar .tab-btn {
+        width: 100%;
+        text-align: left;
+    }
+
+    .results-and-treatment-flow {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

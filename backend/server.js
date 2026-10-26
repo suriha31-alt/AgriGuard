@@ -1,6 +1,15 @@
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const path = require("path");
+
+require("dotenv").config({
+    path: path.join(__dirname, ".env")
+});
+
+const {
+    testDatabaseConnection
+} = require("./services/databaseService");
 
 const weatherRoutes = require("./routes/weatherRoutes");
 const cropRecommendationRoutes = require("./routes/cropRecommendationRoutes");
@@ -9,18 +18,11 @@ const profileRoutes = require("./routes/profileRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
-/*
- * Middleware
- */
 app.use(cors());
 app.use(express.json());
 
-/*
- * Home route
- */
 app.get("/", (req, res) => {
     res.json({
         success: true,
@@ -28,49 +30,12 @@ app.get("/", (req, res) => {
     });
 });
 
-/*
- * Crop Recommendation API
- */
-app.use(
-    "/api/crop-recommendation",
-    cropRecommendationRoutes
-);
+app.use("/api/crop-recommendation", cropRecommendationRoutes);
+app.use("/api/weather", weatherRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/schemes", schemeRoutes);
 
-/*
- * Weather API
- */
-app.use(
-    "/api/weather",
-    weatherRoutes
-);
-
-/*
- * Authentication API
- */
-app.use(
-    "/api/auth",
-    authRoutes
-);
-
-/*
- * Farmer Profile API
- */
-app.use(
-    "/api/profile",
-    profileRoutes
-);
-
-/*
- * Government Schemes API
- */
-app.use(
-    "/api/schemes",
-    schemeRoutes
-);
-
-/*
- * 404
- */
 app.use((req, res) => {
     res.status(404).json({
         success: false,
@@ -78,11 +43,12 @@ app.use((req, res) => {
     });
 });
 
-/*
- * Start server
- */
-app.listen(PORT, () => {
-    console.log(
-        `AgriGuard Backend running on port ${PORT}`
-    );
-});
+async function startServer() {
+    await testDatabaseConnection();
+
+    app.listen(PORT, () => {
+        console.log(`AgriGuard Backend running on port ${PORT}`);
+    });
+}
+
+startServer();

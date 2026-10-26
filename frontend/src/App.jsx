@@ -1,11 +1,12 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Routes,
   Route,
   Navigate,
   Link,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 
 import WeatherDashboard from "./pages/WeatherDashboard";
@@ -18,14 +19,68 @@ import "./App.css";
 
 const BACKEND_URL = "http://localhost:5000";
 
-/*
- * Navigation shown after login.
- */
+const EMPTY_AUTH_DATA = {
+  name: "",
+  email: "",
+  password: "",
+};
+
+const EMPTY_PROFILE_DATA = {
+  state: "",
+  district: "",
+  land_size: "",
+  land_unit: "acres",
+  crop_type: "",
+  farming_type: "",
+};
+
+/* Safely read API responses. */
+async function readResponse(response) {
+  const text = await response.text();
+
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Invalid server response (HTTP ${response.status}).`
+    );
+  }
+}
+
+/* Extract schemes from supported API response formats. */
+function getSchemeList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.schemes)) return data.schemes;
+  if (Array.isArray(data?.data)) return data.data;
+
+  return [];
+}
+
+/* Create a useful error from an API response. */
+async function fetchErrorMessage(response, fallback) {
+  try {
+    const data = await readResponse(response);
+
+    return (
+      data.message ||
+      data.detail ||
+      `${fallback} (HTTP ${response.status}).`
+    );
+  } catch {
+    return `${fallback} (HTTP ${response.status}).`;
+  }
+}
+
+/* Navigation */
 function Navigation({ user, onLogout }) {
   const location = useLocation();
 
   const isActive = (path) =>
-    location.pathname === path ? "nav-link active" : "nav-link";
+    location.pathname === path
+      ? "nav-link active"
+      : "nav-link";
 
   return (
     <header className="header">
@@ -68,13 +123,15 @@ function Navigation({ user, onLogout }) {
           Government Schemes
         </Link>
 
-        {user && (
-          <span style={{ marginLeft: "10px" }}>
-            Welcome, {user.name}
-          </span>
-        )}
+        <span style={{ marginLeft: "10px" }}>
+          Welcome, {user?.name || user?.username || "Farmer"}
+        </span>
 
-        <button className="change-profile-button" onClick={onLogout}>
+        <button
+          type="button"
+          className="change-profile-button"
+          onClick={onLogout}
+        >
           Logout
         </button>
       </nav>
@@ -82,9 +139,7 @@ function Navigation({ user, onLogout }) {
   );
 }
 
-/*
- * Government Schemes page.
- */
+/* Government Schemes */
 function GovernmentSchemes({
   profile,
   schemes,
@@ -97,8 +152,28 @@ function GovernmentSchemes({
     <main className="container">
       <section className="welcome-section">
         <h2>Government Schemes</h2>
-        <p>Government schemes relevant to your farming profile.</p>
+        <p>
+          Find government schemes relevant to your farming profile.
+        </p>
       </section>
+
+      {!profile && !loading && (
+        <section className="profile-card">
+          <h3>Complete Your Farmer Profile</h3>
+          <p>
+            Add your state, district, land size, crops, and farming
+            type to discover relevant schemes.
+          </p>
+
+          <button
+            type="button"
+            className="change-profile-button"
+            onClick={onEditProfile}
+          >
+            Create Farmer Profile
+          </button>
+        </section>
+      )}
 
       {profile && (
         <section className="profile-card">
@@ -106,6 +181,7 @@ function GovernmentSchemes({
             <h3>Your Farmer Profile</h3>
 
             <button
+              type="button"
               className="change-profile-button"
               onClick={onEditProfile}
             >
@@ -116,29 +192,32 @@ function GovernmentSchemes({
           <div className="profile-grid">
             <div>
               <span>State</span>
-              <strong>{profile.state}</strong>
+              <strong>{profile.state || "Not provided"}</strong>
             </div>
 
             <div>
               <span>District</span>
-              <strong>{profile.district}</strong>
+              <strong>{profile.district || "Not provided"}</strong>
             </div>
 
             <div>
               <span>Land Size</span>
               <strong>
-                {profile.land_size} {profile.land_unit}
+                {profile.land_size ?? "Not provided"}{" "}
+                {profile.land_unit || "acres"}
               </strong>
             </div>
 
             <div>
               <span>Crops</span>
-              <strong>{profile.crop_type}</strong>
+              <strong>{profile.crop_type || "Not provided"}</strong>
             </div>
 
             <div>
               <span>Farming Type</span>
-              <strong>{profile.farming_type}</strong>
+              <strong>
+                {profile.farming_type || "Not provided"}
+              </strong>
             </div>
           </div>
         </section>
@@ -146,25 +225,32 @@ function GovernmentSchemes({
 
       {loading && (
         <div className="status">
-          <div className="loader"></div>
-          <p>Finding relevant government schemes...</p>
+          <div className="loader" />
+          <p>Loading government schemes...</p>
         </div>
       )}
 
       {error && !loading && (
         <div className="error-box">
           <p>{error}</p>
-          <button onClick={onRetry}>Try Again</button>
+
+          <button type="button" onClick={onRetry}>
+            Try Again
+          </button>
         </div>
       )}
 
-      {!loading && !error && schemes.length === 0 && (
+      {!loading && !error && profile && schemes.length === 0 && (
         <div className="status">
-          <h3>No schemes found</h3>
+          <h3>No schemes available</h3>
           <p>
-            No relevant government schemes were found for your current
-            profile.
+            No schemes are currently available for display. Try
+            refreshing the list later.
           </p>
+
+          <button type="button" onClick={onRetry}>
+            Refresh Schemes
+          </button>
         </div>
       )}
 
@@ -179,57 +265,62 @@ function GovernmentSchemes({
             {schemes.map((scheme, index) => (
               <article
                 className="scheme-card"
-                key={`${scheme.scheme_name}-${index}`}
+                key={
+                  scheme._id ||
+                  `${scheme.scheme_name || scheme.name || "scheme"}-${index}`
+                }
               >
                 <div className="scheme-header">
                   <span className="scheme-number">{index + 1}</span>
-                  <span className="scheme-state">{scheme.state}</span>
+                  <span className="scheme-state">
+                    {scheme.state || "Government Scheme"}
+                  </span>
                 </div>
 
-                <h3>{scheme.scheme_name}</h3>
-                <p className="description">{scheme.description}</p>
+                <h3>
+                  {scheme.scheme_name || scheme.name || "Untitled Scheme"}
+                </h3>
+
+                <p className="description">
+                  {scheme.description || "No description available."}
+                </p>
 
                 <div className="details">
-                  {scheme.benefits?.length > 0 && (
-                    <div className="detail-section">
-                      <h4>Benefits</h4>
-                      <ul>
-                        {scheme.benefits.map((benefit, benefitIndex) => (
-                          <li key={benefitIndex}>{benefit}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {Array.isArray(scheme.benefits) &&
+                    scheme.benefits.length > 0 && (
+                      <div className="detail-section">
+                        <h4>Benefits</h4>
+                        <ul>
+                          {scheme.benefits.map((benefit, i) => (
+                            <li key={i}>{benefit}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  {scheme.eligibility?.length > 0 && (
-                    <div className="detail-section">
-                      <h4>Eligibility</h4>
-                      <ul>
-                        {scheme.eligibility.map((item, eligibilityIndex) => (
-                          <li key={eligibilityIndex}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {Array.isArray(scheme.eligibility) &&
+                    scheme.eligibility.length > 0 && (
+                      <div className="detail-section">
+                        <h4>Eligibility</h4>
+                        <ul>
+                          {scheme.eligibility.map((item, i) => (
+                            <li key={i}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                 </div>
 
-                {scheme.application_type === "myscheme_fallback" ? (
+                {scheme.application_url ? (
                   <a
                     className="apply-button"
                     href={scheme.application_url}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Find Scheme on myScheme
-                  </a>
-                ) : scheme.application_url ? (
-                  <a
-                    className="apply-button"
-                    href={scheme.application_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Apply / Register
+                    {scheme.application_type === "myscheme_fallback"
+                      ? "Find Scheme on myScheme"
+                      : "Apply / Register"}
                   </a>
                 ) : (
                   <div className="no-link">
@@ -245,22 +336,26 @@ function GovernmentSchemes({
   );
 }
 
-/*
- * Main application.
- */
+/* Main application */
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [token, setToken] = useState(() =>
     localStorage.getItem("agriguard_token")
   );
 
-  const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState("login");
-
-  const [authData, setAuthData] = useState({
-    name: "",
-    email: "",
-    password: "",
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem("agriguard_user");
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
   });
+
+  const [authMode, setAuthMode] = useState("login");
+  const [authData, setAuthData] = useState(EMPTY_AUTH_DATA);
 
   const [profile, setProfile] = useState(null);
   const [schemes, setSchemes] = useState([]);
@@ -268,42 +363,44 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
+
   const [error, setError] = useState("");
+  const [schemeError, setSchemeError] = useState("");
+
   const [showProfileForm, setShowProfileForm] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_PROFILE_DATA);
 
-  const [formData, setFormData] = useState({
-    state: "",
-    district: "",
-    land_size: "",
-    land_unit: "acres",
-    crop_type: "",
-    farming_type: "",
-  });
+  /* Logout */
+  const logout = useCallback(() => {
+    localStorage.removeItem("agriguard_token");
+    localStorage.removeItem("agriguard_user");
 
-  /*
-   * Save JWT token.
-   */
-  function saveToken(newToken, userData) {
-    localStorage.setItem("agriguard_token", newToken);
-    setToken(newToken);
-    setUser(userData);
-  }
+    setToken(null);
+    setUser(null);
+    setProfile(null);
+    setSchemes([]);
+    setShowProfileForm(false);
+    setAuthData(EMPTY_AUTH_DATA);
+    setFormData(EMPTY_PROFILE_DATA);
+    setError("");
+    setSchemeError("");
+    setLoading(false);
+    setSavingProfile(false);
 
-  /*
-   * Authentication input.
-   */
+    navigate("/", { replace: true });
+  }, [navigate]);
+
+  /* Authentication input */
   function handleAuthInputChange(event) {
     const { name, value } = event.target;
 
-    setAuthData((previousData) => ({
-      ...previousData,
+    setAuthData((previous) => ({
+      ...previous,
       [name]: value,
     }));
   }
 
-  /*
-   * Login / Register.
-   */
+  /* Login and registration */
   async function handleAuthSubmit(event) {
     event.preventDefault();
 
@@ -311,22 +408,21 @@ function App() {
       setAuthLoading(true);
       setError("");
 
-      const endpoint =
-        authMode === "login"
-          ? "/api/auth/login"
-          : "/api/auth/register";
+      const isLogin = authMode === "login";
+      const endpoint = isLogin
+        ? "/api/auth/login"
+        : "/api/auth/register";
 
-      const body =
-        authMode === "login"
-          ? {
-              email: authData.email.trim(),
-              password: authData.password,
-            }
-          : {
-              name: authData.name.trim(),
-              email: authData.email.trim(),
-              password: authData.password,
-            };
+      const body = isLogin
+        ? {
+            email: authData.email.trim(),
+            password: authData.password,
+          }
+        : {
+            name: authData.name.trim(),
+            email: authData.email.trim(),
+            password: authData.password,
+          };
 
       const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: "POST",
@@ -336,94 +432,107 @@ function App() {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      const data = await readResponse(response);
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Authentication failed");
+      if (!response.ok || data.success === false) {
+        throw new Error(
+          data.message ||
+            data.detail ||
+            "Authentication failed."
+        );
       }
 
-      if (authMode === "register") {
+      if (!isLogin) {
         setAuthMode("login");
-
         setAuthData({
-          name: "",
+          ...EMPTY_AUTH_DATA,
           email: body.email,
-          password: "",
         });
 
-        alert("Registration successful. Please login with your account.");
+        alert("Registration successful. Please log in.");
         return;
       }
 
-      saveToken(data.token, data.user);
+      if (!data.token || !data.user) {
+        throw new Error(
+          "Login response is missing the user or authentication token."
+        );
+      }
 
-      setAuthData({
-        name: "",
-        email: "",
-        password: "",
-      });
-    } catch (error) {
-      console.error("Authentication Error:", error);
+      localStorage.setItem("agriguard_token", data.token);
+      localStorage.setItem("agriguard_user", JSON.stringify(data.user));
+
+      setToken(data.token);
+      setUser(data.user);
+      setProfile(null);
+      setSchemes([]);
+      setAuthData(EMPTY_AUTH_DATA);
+      setError("");
+      setSchemeError("");
+
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      console.error("Authentication Error:", err);
+
       setError(
-        error.message || "Unable to authenticate. Please try again."
+        err.message ||
+          "Unable to authenticate. Check that the backend is running."
       );
     } finally {
       setAuthLoading(false);
     }
   }
 
-  /*
-   * Fetch government schemes.
-   */
-  async function fetchSchemes() {
+  /* Fetch government schemes */
+  const fetchSchemes = useCallback(async () => {
     if (!token) return;
 
     try {
       setLoading(true);
-      setError("");
+      setSchemeError("");
 
       const response = await fetch(`${BACKEND_URL}/api/schemes/me`, {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      const data = await response.json();
 
       if (response.status === 401) {
         logout();
         return;
       }
 
-      if (response.status === 404) {
-        setProfile(null);
-        setSchemes([]);
-        setShowProfileForm(true);
-        return;
-      }
-
-      if (!response.ok || !data.success) {
+      if (!response.ok) {
         throw new Error(
-          data.message || "Failed to fetch government schemes"
+          await fetchErrorMessage(
+            response,
+            "Failed to fetch government schemes"
+          )
         );
       }
 
-      setProfile(data.profile);
-      setSchemes(data.schemes || []);
-      setShowProfileForm(false);
-    } catch (error) {
-      console.error("Scheme Fetch Error:", error);
-      setError(error.message || "Unable to load government schemes.");
+      const data = await readResponse(response);
+
+      if (data.success === false) {
+        throw new Error(
+          data.message || "Failed to fetch government schemes."
+        );
+      }
+
+      setSchemes(getSchemeList(data));
+    } catch (err) {
+      console.error("Government Schemes Error:", err);
+      setSchemes([]);
+      setSchemeError(
+        err.message || "Unable to load government schemes."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, [token, logout]);
 
-  /*
-   * Load farmer profile.
-   */
-  async function loadProfile() {
+  /* Load farmer profile only */
+  const loadProfile = useCallback(async () => {
     if (!token) return;
 
     try {
@@ -431,70 +540,125 @@ function App() {
       setError("");
 
       const response = await fetch(`${BACKEND_URL}/api/profile/me`, {
-        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      const data = await response.json();
-
-      if (response.status === 404) {
-        setProfile(null);
-        setSchemes([]);
-        setShowProfileForm(true);
-        return;
-      }
 
       if (response.status === 401) {
         logout();
         return;
       }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to load farmer profile");
+      if (response.status === 404) {
+        setProfile(null);
+        setSchemes([]);
+        setSchemeError("");
+        return;
       }
 
-      setProfile(data.data);
-      setShowProfileForm(false);
+      if (!response.ok) {
+        throw new Error(
+          await fetchErrorMessage(
+            response,
+            "Failed to load farmer profile"
+          )
+        );
+      }
 
-      // Load schemes after the profile is retrieved.
-      await fetchSchemes();
-    } catch (error) {
-      console.error("Profile Load Error:", error);
-      setError(error.message || "Unable to load your farmer profile.");
+      const data = await readResponse(response);
+
+      if (data.success === false) {
+        throw new Error(
+          data.message || "Failed to load farmer profile."
+        );
+      }
+
+      const loadedProfile = data.data || data.profile || null;
+
+      setProfile(loadedProfile);
+
+      if (!loadedProfile) {
+        setSchemes([]);
+        setSchemeError("");
+      }
+    } catch (err) {
+      console.error("Profile Load Error:", err);
+      setError(
+        err.message || "Unable to load your farmer profile."
+      );
     } finally {
       setLoading(false);
     }
-  }
+  }, [token, logout]);
 
-  /*
-   * Profile form input.
-   */
+  /* Load profile when the session changes. */
+  useEffect(() => {
+    if (token) {
+      loadProfile();
+    }
+  }, [token, loadProfile]);
+
+  /* Fetch schemes when the schemes page is opened. */
+  useEffect(() => {
+    if (token && location.pathname === "/government-schemes" && profile) {
+      fetchSchemes();
+    }
+  }, [token, location.pathname, profile, fetchSchemes]);
+
+  /* Profile form input */
   function handleInputChange(event) {
     const { name, value } = event.target;
 
-    setFormData((previousData) => ({
-      ...previousData,
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
     }));
   }
 
-  /*
-   * Save farmer profile.
-   */
+  /* Open profile form */
+  function editProfile() {
+    setFormData({
+      state: profile?.state || "",
+      district: profile?.district || "",
+      land_size: profile?.land_size ?? "",
+      land_unit: profile?.land_unit || "acres",
+      crop_type: profile?.crop_type || "",
+      farming_type: profile?.farming_type || "",
+    });
+
+    setError("");
+    setShowProfileForm(true);
+  }
+
+  /* Save farmer profile */
   async function handleProfileSubmit(event) {
     event.preventDefault();
+
+    if (!token) {
+      setError("Your session has expired. Please log in again.");
+      logout();
+      return;
+    }
+
+    const landSize = Number(formData.land_size);
+
+    if (!Number.isFinite(landSize) || landSize <= 0) {
+      setError("Please enter a valid land size greater than zero.");
+      return;
+    }
 
     try {
       setSavingProfile(true);
       setError("");
 
-      const method = profile ? "PUT" : "POST";
-      const endpoint = profile ? "/api/profile/me" : "/api/profile";
+      const isEditing = Boolean(profile);
+      const endpoint = isEditing
+        ? "/api/profile/me"
+        : "/api/profile";
 
       const response = await fetch(`${BACKEND_URL}${endpoint}`, {
-        method,
+        method: isEditing ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -502,97 +666,57 @@ function App() {
         body: JSON.stringify({
           state: formData.state.trim(),
           district: formData.district.trim(),
-          land_size: Number(formData.land_size),
+          land_size: landSize,
           land_unit: formData.land_unit,
           crop_type: formData.crop_type.trim(),
           farming_type: formData.farming_type.trim(),
         }),
       });
 
-      const data = await response.json();
-
       if (response.status === 401) {
         logout();
         return;
       }
 
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "Failed to save farmer profile");
+      if (!response.ok) {
+        throw new Error(
+          await fetchErrorMessage(response, "Failed to save farmer profile")
+        );
       }
 
-      // Reload the saved profile and related schemes.
+      const data = await readResponse(response);
+
+      if (data.success === false) {
+        throw new Error(
+          data.message || "Failed to save farmer profile."
+        );
+      }
+
+      const savedProfile = data.data || data.profile || null;
+
+      if (savedProfile) {
+        setProfile(savedProfile);
+      }
+
+      setShowProfileForm(false);
+
       await loadProfile();
-    } catch (error) {
-      console.error("Profile Save Error:", error);
-      setError(error.message || "Unable to save farmer profile.");
+
+      navigate("/government-schemes");
+    } catch (err) {
+      console.error("Profile Save Error:", err);
+      setError(err.message || "Unable to save farmer profile.");
     } finally {
       setSavingProfile(false);
     }
   }
 
-  /*
-   * Edit profile.
-   */
-  function editProfile() {
-    if (!profile) return;
-
-    setFormData({
-      state: profile.state || "",
-      district: profile.district || "",
-      land_size: profile.land_size ?? "",
-      land_unit: profile.land_unit || "acres",
-      crop_type: profile.crop_type || "",
-      farming_type: profile.farming_type || "",
-    });
-
-    setShowProfileForm(true);
-    setError("");
-  }
-
-  /*
-   * Logout.
-   */
-  function logout() {
-    localStorage.removeItem("agriguard_token");
-
-    setToken(null);
-    setUser(null);
-    setProfile(null);
-    setSchemes([]);
+  function cancelProfileForm() {
     setShowProfileForm(false);
-
-    setAuthData({
-      name: "",
-      email: "",
-      password: "",
-    });
-
-    setFormData({
-      state: "",
-      district: "",
-      land_size: "",
-      land_unit: "acres",
-      crop_type: "",
-      farming_type: "",
-    });
-
     setError("");
   }
 
-  /*
-   * Load profile after login or page refresh.
-   */
-  useEffect(() => {
-    if (token) {
-      loadProfile();
-    }
-    // Load when the authentication token changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
-
-  /*
-   * Login / Register page.
-   */
+  /* Authentication screen */
   if (!token) {
     return (
       <Auth
@@ -610,9 +734,7 @@ function App() {
     );
   }
 
-  /*
-   * Farmer profile form.
-   */
+  /* Farmer profile form */
   if (showProfileForm) {
     return (
       <div className="app">
@@ -622,17 +744,25 @@ function App() {
             <p>Smart Agriculture Assistant for Farmers</p>
           </div>
 
-          <button className="change-profile-button" onClick={logout}>
+          <button
+            type="button"
+            className="change-profile-button"
+            onClick={logout}
+          >
             Logout
           </button>
         </header>
 
         <main className="container">
           <section className="welcome-section">
-            <h2>Tell Us About Your Farm</h2>
+            <h2>
+              {profile
+                ? "Update Your Farmer Profile"
+                : "Tell Us About Your Farm"}
+            </h2>
             <p>
-              Enter your farming details so we can find relevant government
-              schemes for you.
+              Add your farming details to discover relevant government
+              schemes.
             </p>
           </section>
 
@@ -643,9 +773,9 @@ function App() {
                 id="state"
                 name="state"
                 type="text"
-                placeholder="Example: Tamil Nadu"
                 value={formData.state}
                 onChange={handleInputChange}
+                placeholder="Example: Tamil Nadu"
                 required
               />
             </div>
@@ -656,9 +786,9 @@ function App() {
                 id="district"
                 name="district"
                 type="text"
-                placeholder="Example: Dindigul"
                 value={formData.district}
                 onChange={handleInputChange}
+                placeholder="Example: Coimbatore"
                 required
               />
             </div>
@@ -672,9 +802,9 @@ function App() {
                   type="number"
                   min="0.01"
                   step="0.01"
-                  placeholder="Example: 5"
                   value={formData.land_size}
                   onChange={handleInputChange}
+                  placeholder="Example: 5"
                   required
                 />
               </div>
@@ -699,9 +829,9 @@ function App() {
                 id="crop_type"
                 name="crop_type"
                 type="text"
-                placeholder="Example: Rice, Coconut, Banana"
                 value={formData.crop_type}
                 onChange={handleInputChange}
+                placeholder="Example: Rice, Coconut, Banana"
                 required
               />
               <small>Enter multiple crops separated by commas.</small>
@@ -731,17 +861,28 @@ function App() {
               </div>
             )}
 
-            <button
-              className="save-profile-button"
-              type="submit"
-              disabled={savingProfile}
-            >
-              {savingProfile
-                ? "Saving Profile..."
-                : profile
-                  ? "Update Profile & Find Schemes"
-                  : "Save Profile & Find Schemes"}
-            </button>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <button
+                className="save-profile-button"
+                type="submit"
+                disabled={savingProfile}
+              >
+                {savingProfile
+                  ? "Saving Profile..."
+                  : profile
+                    ? "Update Profile & Find Schemes"
+                    : "Save Profile & Find Schemes"}
+              </button>
+
+              <button
+                type="button"
+                className="change-profile-button"
+                onClick={cancelProfileForm}
+                disabled={savingProfile}
+              >
+                Cancel
+              </button>
+            </div>
           </form>
         </main>
 
@@ -752,12 +893,23 @@ function App() {
     );
   }
 
-  /*
-   * Logged-in application and routes.
-   */
+  /* Logged-in pages */
   return (
     <div className="app">
-      <Navigation user={user} onLogout={logout} />
+      {location.pathname !== "/dashboard" && (
+        <Navigation user={user} onLogout={logout} />
+      )}
+
+      {error && (
+        <div className="container">
+          <div className="error-box">
+            <p>{error}</p>
+            <button type="button" onClick={() => setError("")}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       <Routes>
         <Route
@@ -792,7 +944,7 @@ function App() {
               profile={profile}
               schemes={schemes}
               loading={loading}
-              error={error}
+              error={schemeError}
               onRetry={fetchSchemes}
               onEditProfile={editProfile}
             />

@@ -1,0 +1,517 @@
+
+/* =========================================
+   AGRIGUARD - AI DISEASE DETECTION
+   ========================================= */
+
+.disease-upload-card {
+    --agri-green: #16803d;
+    --agri-dark: #14532d;
+    --agri-light: #f0fdf4;
+    --agri-border: #dcebe0;
+
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid var(--agri-border);
+    border-radius: 24px;
+    box-shadow: 0 12px 40px rgba(20, 83, 45, 0.08);
+    color: #183328;
+    box-sizing: border-box;
+}
+
+.disease-upload-card *,
+.disease-upload-card *::before,
+.disease-upload-card *::after {
+    box-sizing: border-box;
+}
+
+/* Header */
+
+.disease-upload-card .card-top-bar {
+    padding: 30px 36px 26px;
+    text-align: center;
+    background:
+        radial-gradient(ellipse at top right, rgba(134, 239, 172, 0.25), transparent 45%),
+        linear-gradient(135deg, #f0fdf4, #ffffff 75%);
+    border-bottom: 1px solid #e5f1e7;
+}
+
+.disease-upload-card .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 13px;
+    margin-bottom: 15px;
+    color: #166534;
+    background: #dcfce7;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.disease-upload-card .card-top-bar h2 {
+    margin: 0 0 10px;
+    color: #14532d;
+    font-size: clamp(23px, 3vw, 30px);
+    font-weight: 750;
+    line-height: 1.3;
+}
+
+.disease-upload-card .card-top-bar p {
+    max-width: 580px;
+    margin: 0 auto;
+    color: #647568;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+/* Main form */
+
+.disease-upload-card .upload-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding: 30px 36px 36px;
+}
+
+/* Image dropzone */
+
+.disease-upload-card .dropzone-large {
+    position: relative;
+    display: flex;
+    min-height: 290px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    overflow: hidden;
+    text-align: center;
+    background: #f8fcf8;
+    border: 2px dashed #a8cfb2;
+    border-radius: 18px;
+    cursor: pointer;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.disease-upload-card .dropzone-large:hover,
+.disease-upload-card .dropzone-large.dragging {
+    background: #ecfdf1;
+    border-color: #16a34a;
+}
+
+.disease-upload-card .dropzone-large:hover {
+    transform: translateY(-2px);
+}
+
+.disease-upload-card .dropzone-large:focus-visible {
+    outline: 3px solid #86efac;
+    outline-offset: 4px;
+}
+
+.disease-upload-card .dropzone-illustration {
+    position: relative;
+    display: flex;
+    width: 88px;
+    height: 88px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    background: #dcfce7;
+    border-radius: 24px;
+}
+
+.disease-upload-card .icon-leaf {
+    font-size: 42px;
+    line-height: 1;
+}
+
+.disease-upload-card .icon-camera {
+    position: absolute;
+    right: -8px;
+    bottom: -5px;
+    display: flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #dcebe0;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    font-size: 19px;
+}
+
+.disease-upload-card .dropzone-large h3 {
+    margin: 0 0 10px;
+    color: #244c34;
+    font-size: clamp(17px, 2vw, 21px);
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.disease-upload-card .dropzone-subtitle {
+    max-width: 470px;
+    margin: 0 0 20px;
+    color: #748477;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.disease-upload-card .browse-button-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 20px;
+    color: #166534;
+    background: #ffffff;
+    border: 1px solid #bbd9c2;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgba(20, 83, 45, 0.04);
+}
+
+/* Image preview */
+
+.disease-upload-card .image-preview-card {
+    overflow: hidden;
+    background: #ffffff;
+    border: 1px solid #dcebe0;
+    border-radius: 16px;
+}
+
+.disease-upload-card .preview-image-wrapper {
+    position: relative;
+    display: flex;
+    min-height: 260px;
+    max-height: 460px;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: #f5faf6;
+}
+
+.disease-upload-card .preview-img {
+    display: block;
+    width: 100%;
+    max-height: 420px;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.disease-upload-card .remove-image-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    width: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    color: #b91c1c;
+    background: #ffffff;
+    border: 1px solid #fecaca;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.disease-upload-card .preview-details {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 20px;
+}
+
+.disease-upload-card .file-meta {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 12px;
+}
+
+.disease-upload-card .file-icon {
+    display: flex;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    background: #dcfce7;
+    border-radius: 12px;
+    font-size: 22px;
+}
+
+.disease-upload-card .file-meta > div {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.disease-upload-card .file-name {
+    max-width: 420px;
+    overflow-wrap: anywhere;
+    color: #294735;
+    font-size: 14px;
+}
+
+.disease-upload-card .file-size {
+    color: #758579;
+    font-size: 12px;
+}
+
+.disease-upload-card .btn-change-image {
+    padding: 10px 14px;
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* Symptoms and voice input */
+
+.disease-upload-card .notes-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.disease-upload-card .label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.disease-upload-card .label-row label {
+    color: #294735;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.disease-upload-card .voice-input-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 13px;
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.disease-upload-card .voice-input-btn:hover {
+    background: #dcfce7;
+}
+
+.disease-upload-card .voice-input-btn.listening {
+    color: #b91c1c;
+    background: #fef2f2;
+    border-color: #fecaca;
+    animation: agri-pulse 1.4s infinite;
+}
+
+.disease-upload-card .mic-icon {
+    font-size: 17px;
+}
+
+.disease-upload-card .styled-textarea {
+    display: block;
+    width: 100%;
+    min-height: 112px;
+    padding: 15px 16px;
+    resize: vertical;
+    color: #263b2e;
+    background: #ffffff;
+    border: 1px solid #d6e4d9;
+    border-radius: 12px;
+    outline: none;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.disease-upload-card .styled-textarea::placeholder {
+    color: #98a69b;
+}
+
+.disease-upload-card .styled-textarea:focus {
+    border-color: #22a052;
+    box-shadow: 0 0 0 4px rgba(34, 160, 82, 0.11);
+}
+
+/* Primary diagnosis button */
+
+.disease-upload-card .btn-detect-prominent {
+    display: flex;
+    width: 100%;
+    min-height: 58px;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 24px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #16803d, #166534);
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 6px 15px rgba(22, 101, 52, 0.2);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 750;
+    cursor: pointer;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.disease-upload-card .btn-detect-prominent:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 9px 22px rgba(22, 101, 52, 0.25);
+}
+
+.disease-upload-card .btn-detect-prominent:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.disease-upload-card .btn-detect-prominent:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.disease-upload-card .button-text-row,
+.disease-upload-card .loading-spinner-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    text-align: center;
+}
+
+.disease-upload-card .search-icon,
+.disease-upload-card .spinner-icon {
+    font-size: 20px;
+}
+
+.disease-upload-card .spinner-icon {
+    display: inline-block;
+    animation: agri-spin 1.2s linear infinite;
+}
+
+/* Utility */
+
+.disease-upload-card .mt-4 {
+    margin-top: 0;
+}
+
+.disease-upload-card button:focus-visible {
+    outline: 3px solid #86efac;
+    outline-offset: 3px;
+}
+
+@keyframes agri-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes agri-pulse {
+    50% {
+        box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.08);
+    }
+}
+
+/* Mobile responsiveness */
+
+@media (max-width: 640px) {
+    .disease-upload-card {
+        border-radius: 16px;
+    }
+
+    .disease-upload-card .card-top-bar {
+        padding: 24px 18px 20px;
+    }
+
+    .disease-upload-card .upload-card-body {
+        gap: 18px;
+        padding: 20px 16px 22px;
+    }
+
+    .disease-upload-card .dropzone-large {
+        min-height: 255px;
+        padding: 26px 16px;
+    }
+
+    .disease-upload-card .dropzone-illustration {
+        width: 74px;
+        height: 74px;
+    }
+
+    .disease-upload-card .icon-leaf {
+        font-size: 35px;
+    }
+
+    .disease-upload-card .preview-image-wrapper {
+        min-height: 200px;
+        padding: 10px;
+    }
+
+    .disease-upload-card .preview-details {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 15px;
+    }
+
+    .disease-upload-card .btn-change-image {
+        width: 100%;
+    }
+
+    .disease-upload-card .label-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .disease-upload-card .voice-input-btn {
+        align-self: flex-start;
+    }
+
+    .disease-upload-card .btn-detect-prominent {
+        min-height: 54px;
+        padding: 13px 12px;
+        font-size: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .disease-upload-card *,
+    .disease-upload-card *::before,
+    .disease-upload-card *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
